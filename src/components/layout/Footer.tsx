@@ -1,8 +1,19 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
+import { StudioSettings } from '../../types';
+import { api } from '../../services/api';
+import { fallbackSettings } from '../../data/initialData';
 
 export const Footer: React.FC = () => {
+  const [settings, setSettings] = useState<StudioSettings>(fallbackSettings);
+
+  useEffect(() => {
+    api.getSettings().then((data) => {
+      if (data) setSettings(data);
+    });
+  }, []);
+
   return (
     <footer className="bg-atelier-cream border-t border-atelier-charcoal/10 pt-20 pb-12 text-atelier-charcoal">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
@@ -22,25 +33,24 @@ export const Footer: React.FC = () => {
                 New Business Inquiries
               </span>
               <a
-                href="mailto:inquire@atelier-studio.com"
+                href={`mailto:${settings.primaryEmail || fallbackSettings.primaryEmail}`}
                 className="font-serif text-lg text-atelier-charcoal hover:underline inline-flex items-center space-x-1"
               >
-                <span>inquire@atelier-studio.com</span>
+                <span>{settings.primaryEmail || fallbackSettings.primaryEmail}</span>
                 <ArrowUpRight className="w-4 h-4" />
               </a>
             </div>
           </div>
 
-          {/* Locations */}
+          {/* Locations (Dynamic) */}
           <div className="lg:col-span-4 grid grid-cols-2 gap-8 text-[13px]">
             <div>
               <span className="text-[10px] tracking-editorial uppercase text-atelier-muted block mb-3">
                 Milan Studio
               </span>
               <p className="text-atelier-muted leading-relaxed">
-                Via Solferino 14<br />
-                20121 Milano, Italy<br />
-                +39 02 8901 2345
+                {settings.locationMilan || fallbackSettings.locationMilan}<br />
+                {settings.phoneMilan || fallbackSettings.phoneMilan}
               </p>
             </div>
             <div>
@@ -48,9 +58,8 @@ export const Footer: React.FC = () => {
                 London Office
               </span>
               <p className="text-atelier-muted leading-relaxed">
-                42 Marylebone High St<br />
-                London W1U 5HF, UK<br />
-                +44 20 7946 0888
+                {settings.locationLondon || fallbackSettings.locationLondon}<br />
+                {settings.phoneLondon || fallbackSettings.phoneLondon}
               </p>
             </div>
             <div className="col-span-2 pt-2">
@@ -58,7 +67,7 @@ export const Footer: React.FC = () => {
                 Kyoto Atelier
               </span>
               <p className="text-atelier-muted leading-relaxed">
-                Kamigyo Ward, Kyoto 602-0898, Japan
+                {settings.locationKyoto || fallbackSettings.locationKyoto}
               </p>
             </div>
           </div>

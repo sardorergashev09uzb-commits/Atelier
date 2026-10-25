@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Project, Inquiry, StudioSettings, StudioService } from '../../types';
+import { Project, Inquiry, StudioSettings, StudioService, TeamMember, ArchitectureMaterial } from '../../types';
 import { api } from '../../services/api';
 import { fallbackSettings } from '../../data/initialData';
 import { 
   Plus, Trash2, Edit3, Eye, LogOut, CheckCircle, Clock, ExternalLink, 
   Settings, Briefcase, FileText, Save, KeyRound, Download, Search, 
-  Menu, X, Lock, Check, AlertCircle 
+  Menu, X, Lock, AlertCircle, Users, Sparkles 
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -14,7 +14,10 @@ export const AdminDashboard: React.FC = () => {
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [settings, setSettings] = useState<StudioSettings>(fallbackSettings);
   const [services, setServices] = useState<StudioService[]>([]);
-  const [activeTab, setActiveTab] = useState<'projects' | 'inquiries' | 'services' | 'settings' | 'security'>('projects');
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [materials, setMaterials] = useState<ArchitectureMaterial[]>([]);
+
+  const [activeTab, setActiveTab] = useState<'projects' | 'inquiries' | 'services' | 'team' | 'materials' | 'settings' | 'security'>('projects');
   const [loading, setLoading] = useState(true);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -24,7 +27,7 @@ export const AdminDashboard: React.FC = () => {
   const [inquirySearch, setInquirySearch] = useState('');
   const [inquiryStatusFilter, setInquiryStatusFilter] = useState<string>('All');
 
-  // Security Credentials Form State
+  // Security Form State
   const [securityForm, setSecurityForm] = useState({
     currentPassword: '',
     newUsername: 'admin',
@@ -36,7 +39,7 @@ export const AdminDashboard: React.FC = () => {
   const [securityStatus, setSecurityStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [securityLoading, setSecurityLoading] = useState(false);
 
-  // Modal / Form state for Project CRUD
+  // Project Modal State
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [projectForm, setProjectForm] = useState<Partial<Project>>({
@@ -58,7 +61,7 @@ export const AdminDashboard: React.FC = () => {
   });
   const [materialInput, setMaterialInput] = useState('');
 
-  // Modal / Form state for Service CRUD
+  // Service Modal State
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [serviceForm, setServiceForm] = useState<Partial<StudioService>>({
@@ -71,6 +74,31 @@ export const AdminDashboard: React.FC = () => {
     scope: ['Space planning', 'Bespoke detailing'],
   });
   const [scopeInput, setScopeInput] = useState('');
+
+  // Team Member Modal State
+  const [showTeamModal, setShowTeamModal] = useState(false);
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
+  const [teamForm, setTeamForm] = useState<Partial<TeamMember>>({
+    name: '',
+    role: '',
+    location: 'Milan',
+    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80',
+    bio: '',
+  });
+
+  // Material Specimen Modal State
+  const [showMaterialModal, setShowMaterialModal] = useState(false);
+  const [editingMaterialId, setEditingMaterialId] = useState<string | null>(null);
+  const [materialForm, setMaterialForm] = useState<Partial<ArchitectureMaterial>>({
+    name: '',
+    origin: '',
+    category: 'Stone',
+    image: 'https://images.unsplash.com/photo-1590402494682-cd3fb53b1f70?auto=format&fit=crop&w=800&q=80',
+    tactility: '',
+    patinaBehavior: '',
+    architecturalRole: '',
+    description: '',
+  });
 
   const navigate = useNavigate();
 
@@ -85,16 +113,20 @@ export const AdminDashboard: React.FC = () => {
 
   const loadData = async () => {
     setLoading(true);
-    const [pData, iData, sData, svData] = await Promise.all([
+    const [pData, iData, sData, svData, tData, mData] = await Promise.all([
       api.getProjects(),
       api.getInquiries(),
       api.getSettings(),
       api.getServices(),
+      api.getTeamMembers(),
+      api.getMaterials(),
     ]);
     setProjects(pData);
     setInquiries(iData);
     if (sData) setSettings(sData);
     if (svData) setServices(svData);
+    if (tData) setTeam(tData);
+    if (mData) setMaterials(mData);
     setLoading(false);
   };
 
@@ -103,16 +135,14 @@ export const AdminDashboard: React.FC = () => {
     navigate('/admin/login');
   };
 
-  // --- Security: Change Credentials ---
+  // --- Security ---
   const handleSecuritySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSecurityStatus(null);
-
     if (securityForm.newPassword && securityForm.newPassword !== securityForm.confirmPassword) {
       setSecurityStatus({ type: 'error', message: 'New password and confirm password do not match.' });
       return;
     }
-
     if (securityForm.newPassword && securityForm.newPassword.length < 6) {
       setSecurityStatus({ type: 'error', message: 'New password must be at least 6 characters long.' });
       return;
@@ -130,18 +160,13 @@ export const AdminDashboard: React.FC = () => {
 
     if (res.success) {
       setSecurityStatus({ type: 'success', message: res.message || 'Credentials successfully updated!' });
-      setSecurityForm((prev) => ({
-        ...prev,
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: '',
-      }));
+      setSecurityForm((prev) => ({ ...prev, currentPassword: '', newPassword: '', confirmPassword: '' }));
     } else {
       setSecurityStatus({ type: 'error', message: res.error || 'Failed to update credentials. Please check current password.' });
     }
   };
 
-  // --- Project CRUD ---
+  // --- Projects ---
   const openNewProjectModal = () => {
     setEditingProjectId(null);
     setProjectForm({
@@ -182,7 +207,7 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const handleDeleteProject = async (id: string, title: string) => {
-    if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
+    if (window.confirm(`Delete "${title}"?`)) {
       await api.deleteProject(id);
       loadData();
     }
@@ -209,7 +234,7 @@ export const AdminDashboard: React.FC = () => {
     setTimeout(() => setSaveSuccess(false), 3000);
   };
 
-  // --- Service CRUD ---
+  // --- Services ---
   const openNewServiceModal = () => {
     setEditingServiceId(null);
     setServiceForm({
@@ -219,7 +244,7 @@ export const AdminDashboard: React.FC = () => {
       tag: 'Discipline',
       image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
       description: '',
-      scope: ['Architectural design', 'On-site execution oversight'],
+      scope: ['Architectural design', 'On-site craft supervision'],
     });
     setShowServiceModal(true);
   };
@@ -248,6 +273,83 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  // --- Team ---
+  const openNewTeamModal = () => {
+    setEditingTeamId(null);
+    setTeamForm({
+      name: '',
+      role: '',
+      location: 'Milan / London',
+      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80',
+      bio: '',
+    });
+    setShowTeamModal(true);
+  };
+
+  const openEditTeamModal = (m: TeamMember) => {
+    setEditingTeamId(m.id);
+    setTeamForm(m);
+    setShowTeamModal(true);
+  };
+
+  const handleSaveTeam = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingTeamId) {
+      await api.updateTeamMember(editingTeamId, teamForm);
+    } else {
+      await api.createTeamMember(teamForm);
+    }
+    setShowTeamModal(false);
+    loadData();
+  };
+
+  const handleDeleteTeam = async (id: string, name: string) => {
+    if (window.confirm(`Delete team member "${name}"?`)) {
+      await api.deleteTeamMember(id);
+      loadData();
+    }
+  };
+
+  // --- Materials ---
+  const openNewMaterialModal = () => {
+    setEditingMaterialId(null);
+    setMaterialForm({
+      name: '',
+      origin: '',
+      category: 'Stone',
+      image: 'https://images.unsplash.com/photo-1590402494682-cd3fb53b1f70?auto=format&fit=crop&w=800&q=80',
+      tactility: '',
+      patinaBehavior: '',
+      architecturalRole: '',
+      description: '',
+    });
+    setShowMaterialModal(true);
+  };
+
+  const openEditMaterialModal = (mat: ArchitectureMaterial) => {
+    setEditingMaterialId(mat.id);
+    setMaterialForm(mat);
+    setShowMaterialModal(true);
+  };
+
+  const handleSaveMaterial = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingMaterialId) {
+      await api.updateMaterial(editingMaterialId, materialForm);
+    } else {
+      await api.createMaterial(materialForm);
+    }
+    setShowMaterialModal(false);
+    loadData();
+  };
+
+  const handleDeleteMaterial = async (id: string, name: string) => {
+    if (window.confirm(`Delete material specimen "${name}"?`)) {
+      await api.deleteMaterial(id);
+      loadData();
+    }
+  };
+
   const addScopeItem = () => {
     if (scopeInput.trim()) {
       setServiceForm({
@@ -264,7 +366,7 @@ export const AdminDashboard: React.FC = () => {
     setServiceForm({ ...serviceForm, scope: list });
   };
 
-  const addMaterial = () => {
+  const addMaterialTag = () => {
     if (materialInput.trim()) {
       setProjectForm({
         ...projectForm,
@@ -274,13 +376,12 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  const removeMaterial = (index: number) => {
+  const removeMaterialTag = (index: number) => {
     const list = [...(projectForm.materials || [])];
     list.splice(index, 1);
     setProjectForm({ ...projectForm, materials: list });
   };
 
-  // Filtered lists
   const filteredProjects = projects.filter((p) =>
     p.title.toLowerCase().includes(projectSearch.toLowerCase()) ||
     p.location.toLowerCase().includes(projectSearch.toLowerCase()) ||
@@ -303,7 +404,6 @@ export const AdminDashboard: React.FC = () => {
       {/* ---------------- SIDEBAR (DESKTOP) ---------------- */}
       <aside className="hidden lg:flex w-64 bg-atelier-cream border-r border-atelier-charcoal/10 flex-col justify-between shrink-0 sticky top-0 h-screen">
         <div>
-          {/* Studio Brand Header */}
           <div className="p-6 border-b border-atelier-charcoal/10">
             <Link to="/" className="group flex flex-col items-start focus:outline-none">
               <span className="font-serif tracking-[0.24em] text-xl font-normal text-atelier-charcoal">
@@ -318,13 +418,12 @@ export const AdminDashboard: React.FC = () => {
             </Link>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="p-4 space-y-1.5">
+          <nav className="p-4 space-y-1">
             <button
               onClick={() => setActiveTab('projects')}
-              className={`w-full flex items-center justify-between px-3.5 py-3 text-xs tracking-editorial uppercase transition-all rounded ${
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 text-xs tracking-editorial uppercase transition-all rounded ${
                 activeTab === 'projects'
-                  ? 'bg-atelier-charcoal text-atelier-ivory font-medium shadow-xs'
+                  ? 'bg-atelier-charcoal text-atelier-ivory font-medium'
                   : 'text-atelier-muted hover:text-atelier-charcoal hover:bg-atelier-sand/40'
               }`}
             >
@@ -332,18 +431,14 @@ export const AdminDashboard: React.FC = () => {
                 <FileText className="w-4 h-4 shrink-0" />
                 <span>Projects</span>
               </div>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono ${
-                activeTab === 'projects' ? 'bg-atelier-sand/30 text-atelier-ivory' : 'bg-atelier-sand/60 text-atelier-charcoal'
-              }`}>
-                {projects.length}
-              </span>
+              <span className="text-[10px] font-mono">{projects.length}</span>
             </button>
 
             <button
               onClick={() => setActiveTab('inquiries')}
-              className={`w-full flex items-center justify-between px-3.5 py-3 text-xs tracking-editorial uppercase transition-all rounded ${
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 text-xs tracking-editorial uppercase transition-all rounded ${
                 activeTab === 'inquiries'
-                  ? 'bg-atelier-charcoal text-atelier-ivory font-medium shadow-xs'
+                  ? 'bg-atelier-charcoal text-atelier-ivory font-medium'
                   : 'text-atelier-muted hover:text-atelier-charcoal hover:bg-atelier-sand/40'
               }`}
             >
@@ -362,9 +457,9 @@ export const AdminDashboard: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('services')}
-              className={`w-full flex items-center justify-between px-3.5 py-3 text-xs tracking-editorial uppercase transition-all rounded ${
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 text-xs tracking-editorial uppercase transition-all rounded ${
                 activeTab === 'services'
-                  ? 'bg-atelier-charcoal text-atelier-ivory font-medium shadow-xs'
+                  ? 'bg-atelier-charcoal text-atelier-ivory font-medium'
                   : 'text-atelier-muted hover:text-atelier-charcoal hover:bg-atelier-sand/40'
               }`}
             >
@@ -376,41 +471,69 @@ export const AdminDashboard: React.FC = () => {
             </button>
 
             <button
+              onClick={() => setActiveTab('team')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 text-xs tracking-editorial uppercase transition-all rounded ${
+                activeTab === 'team'
+                  ? 'bg-atelier-charcoal text-atelier-ivory font-medium'
+                  : 'text-atelier-muted hover:text-atelier-charcoal hover:bg-atelier-sand/40'
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <Users className="w-4 h-4 shrink-0" />
+                <span>Team Members</span>
+              </div>
+              <span className="text-[10px] text-atelier-muted font-mono">{team.length}</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('materials')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 text-xs tracking-editorial uppercase transition-all rounded ${
+                activeTab === 'materials'
+                  ? 'bg-atelier-charcoal text-atelier-ivory font-medium'
+                  : 'text-atelier-muted hover:text-atelier-charcoal hover:bg-atelier-sand/40'
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <Sparkles className="w-4 h-4 shrink-0" />
+                <span>Materials Library</span>
+              </div>
+              <span className="text-[10px] text-atelier-muted font-mono">{materials.length}</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('settings')}
-              className={`w-full flex items-center justify-between px-3.5 py-3 text-xs tracking-editorial uppercase transition-all rounded ${
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 text-xs tracking-editorial uppercase transition-all rounded ${
                 activeTab === 'settings'
-                  ? 'bg-atelier-charcoal text-atelier-ivory font-medium shadow-xs'
+                  ? 'bg-atelier-charcoal text-atelier-ivory font-medium'
                   : 'text-atelier-muted hover:text-atelier-charcoal hover:bg-atelier-sand/40'
               }`}
             >
               <div className="flex items-center space-x-3">
                 <Settings className="w-4 h-4 shrink-0" />
-                <span>Site Settings</span>
+                <span>Master Settings</span>
               </div>
             </button>
 
             <button
               onClick={() => setActiveTab('security')}
-              className={`w-full flex items-center justify-between px-3.5 py-3 text-xs tracking-editorial uppercase transition-all rounded ${
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 text-xs tracking-editorial uppercase transition-all rounded ${
                 activeTab === 'security'
-                  ? 'bg-atelier-charcoal text-atelier-ivory font-medium shadow-xs'
+                  ? 'bg-atelier-charcoal text-atelier-ivory font-medium'
                   : 'text-atelier-muted hover:text-atelier-charcoal hover:bg-atelier-sand/40'
               }`}
             >
               <div className="flex items-center space-x-3">
                 <KeyRound className="w-4 h-4 shrink-0" />
-                <span>Security & Login</span>
+                <span>Security & Password</span>
               </div>
             </button>
           </nav>
         </div>
 
-        {/* Sidebar Footer: Backup, Profile & Sign Out */}
-        <div className="p-4 border-t border-atelier-charcoal/10 space-y-3 bg-atelier-cream">
+        <div className="p-4 border-t border-atelier-charcoal/10 space-y-2 bg-atelier-cream">
           <button
             onClick={() => api.exportBackup()}
             className="w-full flex items-center space-x-2 px-3 py-2 text-[11px] uppercase tracking-wider text-atelier-muted hover:text-atelier-charcoal hover:bg-atelier-sand/40 transition-colors rounded"
-            title="Download full JSON snapshot of database"
           >
             <Download className="w-3.5 h-3.5 text-atelier-olive" />
             <span>Export Database (.json)</span>
@@ -434,19 +557,14 @@ export const AdminDashboard: React.FC = () => {
                 {securityForm.email}
               </span>
             </div>
-
-            <button
-              onClick={handleLogout}
-              className="p-1.5 text-atelier-muted hover:text-red-700 transition-colors"
-              title="Sign Out"
-            >
+            <button onClick={handleLogout} className="p-1.5 text-atelier-muted hover:text-red-700" title="Sign Out">
               <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
       </aside>
 
-      {/* ---------------- MOBILE SIDEBAR DRAWER ---------------- */}
+      {/* ---------------- MOBILE DRAWER ---------------- */}
       {mobileSidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex">
           <div className="w-64 bg-atelier-cream border-r border-atelier-charcoal/10 flex flex-col justify-between p-4 z-50">
@@ -457,71 +575,45 @@ export const AdminDashboard: React.FC = () => {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
-              <div className="space-y-2">
-                <button
-                  onClick={() => { setActiveTab('projects'); setMobileSidebarOpen(false); }}
-                  className="w-full text-left p-2.5 text-xs uppercase tracking-wider flex items-center space-x-2"
-                >
-                  <FileText className="w-4 h-4" />
-                  <span>Projects ({projects.length})</span>
-                </button>
-                <button
-                  onClick={() => { setActiveTab('inquiries'); setMobileSidebarOpen(false); }}
-                  className="w-full text-left p-2.5 text-xs uppercase tracking-wider flex items-center space-x-2"
-                >
-                  <Clock className="w-4 h-4" />
-                  <span>Inquiries ({inquiries.length})</span>
-                </button>
-                <button
-                  onClick={() => { setActiveTab('services'); setMobileSidebarOpen(false); }}
-                  className="w-full text-left p-2.5 text-xs uppercase tracking-wider flex items-center space-x-2"
-                >
-                  <Briefcase className="w-4 h-4" />
-                  <span>Disciplines ({services.length})</span>
-                </button>
-                <button
-                  onClick={() => { setActiveTab('settings'); setMobileSidebarOpen(false); }}
-                  className="w-full text-left p-2.5 text-xs uppercase tracking-wider flex items-center space-x-2"
-                >
-                  <Settings className="w-4 h-4" />
-                  <span>Site Settings</span>
-                </button>
-                <button
-                  onClick={() => { setActiveTab('security'); setMobileSidebarOpen(false); }}
-                  className="w-full text-left p-2.5 text-xs uppercase tracking-wider flex items-center space-x-2"
-                >
-                  <KeyRound className="w-4 h-4" />
-                  <span>Security & Login</span>
-                </button>
+              <div className="space-y-1.5">
+                {[
+                  { tab: 'projects', label: 'Projects', icon: FileText, count: projects.length },
+                  { tab: 'inquiries', label: 'Inquiries', icon: Clock, count: inquiries.length },
+                  { tab: 'services', label: 'Disciplines', icon: Briefcase, count: services.length },
+                  { tab: 'team', label: 'Team', icon: Users, count: team.length },
+                  { tab: 'materials', label: 'Materials', icon: Sparkles, count: materials.length },
+                  { tab: 'settings', label: 'Settings', icon: Settings },
+                  { tab: 'security', label: 'Security', icon: KeyRound },
+                ].map((item: any) => (
+                  <button
+                    key={item.tab}
+                    onClick={() => { setActiveTab(item.tab); setMobileSidebarOpen(false); }}
+                    className="w-full text-left p-2.5 text-xs uppercase tracking-wider flex items-center justify-between"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <item.icon className="w-4 h-4" />
+                      <span>{item.label}</span>
+                    </div>
+                    {item.count !== undefined && <span className="font-mono text-[10px]">{item.count}</span>}
+                  </button>
+                ))}
               </div>
             </div>
-
             <div className="pt-4 border-t border-atelier-charcoal/10 space-y-2">
-              <button
-                onClick={() => api.exportBackup()}
-                className="w-full text-left text-xs uppercase text-atelier-olive py-2"
-              >
+              <button onClick={() => api.exportBackup()} className="w-full text-left text-xs uppercase text-atelier-olive py-2">
                 Export Database
               </button>
-              <button
-                onClick={handleLogout}
-                className="w-full text-left text-xs uppercase text-red-700 py-2"
-              >
+              <button onClick={handleLogout} className="w-full text-left text-xs uppercase text-red-700 py-2">
                 Sign Out
               </button>
             </div>
           </div>
-          <div
-            onClick={() => setMobileSidebarOpen(false)}
-            className="flex-1 bg-atelier-dark/50 backdrop-blur-xs"
-          />
+          <div onClick={() => setMobileSidebarOpen(false)} className="flex-1 bg-atelier-dark/50" />
         </div>
       )}
 
       {/* ---------------- MAIN CONTENT AREA ---------------- */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile Header Bar */}
         <header className="lg:hidden bg-atelier-cream border-b border-atelier-charcoal/10 px-4 py-3 flex items-center justify-between sticky top-0 z-30">
           <div className="flex items-center space-x-3">
             <button onClick={() => setMobileSidebarOpen(true)} className="p-1">
@@ -538,39 +630,31 @@ export const AdminDashboard: React.FC = () => {
           {/* Quick Metrics Bar */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
             <div className="bg-atelier-cream p-4 border border-atelier-charcoal/10">
-              <span className="text-[9px] tracking-editorial uppercase text-atelier-muted block">Case Studies</span>
+              <span className="text-[9px] tracking-editorial uppercase text-atelier-muted block">Projects</span>
               <div className="font-serif text-2xl text-atelier-charcoal mt-1">{projects.length}</div>
             </div>
             <div className="bg-atelier-cream p-4 border border-atelier-charcoal/10">
-              <span className="text-[9px] tracking-editorial uppercase text-atelier-muted block">Client Inquiries</span>
+              <span className="text-[9px] tracking-editorial uppercase text-atelier-muted block">Inquiries</span>
               <div className="font-serif text-2xl text-atelier-charcoal mt-1">{inquiries.length}</div>
             </div>
             <div className="bg-atelier-cream p-4 border border-atelier-charcoal/10">
-              <span className="text-[9px] tracking-editorial uppercase text-atelier-muted block">Disciplines</span>
-              <div className="font-serif text-2xl text-atelier-charcoal mt-1">{services.length}</div>
+              <span className="text-[9px] tracking-editorial uppercase text-atelier-muted block">Team Members</span>
+              <div className="font-serif text-2xl text-atelier-charcoal mt-1">{team.length}</div>
             </div>
             <div className="bg-atelier-cream p-4 border border-atelier-charcoal/10">
-              <span className="text-[9px] tracking-editorial uppercase text-atelier-muted block">API Status</span>
-              <div className="font-serif text-base text-atelier-olive mt-1 flex items-center space-x-1">
-                <Check className="w-3.5 h-3.5" />
-                <span>Connected</span>
-              </div>
+              <span className="text-[9px] tracking-editorial uppercase text-atelier-muted block">Material Specimens</span>
+              <div className="font-serif text-2xl text-atelier-charcoal mt-1">{materials.length}</div>
             </div>
           </div>
 
-          {/* ================= TAB 1: PROJECTS ================= */}
+          {/* ================= TAB: PROJECTS ================= */}
           {activeTab === 'projects' && (
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 mb-6 border-b border-atelier-charcoal/10 gap-4">
                 <div>
-                  <h1 className="font-serif text-2xl md:text-3xl text-atelier-charcoal">
-                    Portfolio Case Studies
-                  </h1>
-                  <p className="text-xs text-atelier-muted mt-1">
-                    Manage showcase architecture imagery, metadata, and editorial details.
-                  </p>
+                  <h1 className="font-serif text-2xl md:text-3xl text-atelier-charcoal">Portfolio Case Studies</h1>
+                  <p className="text-xs text-atelier-muted mt-1">Manage architectural case studies, galleries, and specifications.</p>
                 </div>
-
                 <div className="flex items-center space-x-3">
                   <div className="relative">
                     <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-atelier-muted" />
@@ -657,19 +741,14 @@ export const AdminDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* ================= TAB 2: INQUIRIES ================= */}
+          {/* ================= TAB: INQUIRIES ================= */}
           {activeTab === 'inquiries' && (
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 mb-6 border-b border-atelier-charcoal/10 gap-4">
                 <div>
-                  <h1 className="font-serif text-2xl md:text-3xl text-atelier-charcoal">
-                    Client Inquiries & Consultation Leads
-                  </h1>
-                  <p className="text-xs text-atelier-muted mt-1">
-                    Submissions received via the online architectural inquiry form.
-                  </p>
+                  <h1 className="font-serif text-2xl md:text-3xl text-atelier-charcoal">Client Inquiries & Consultation Leads</h1>
+                  <p className="text-xs text-atelier-muted mt-1">Review incoming consultation requests and update project status.</p>
                 </div>
-
                 <div className="flex items-center space-x-3">
                   <select
                     value={inquiryStatusFilter}
@@ -706,9 +785,7 @@ export const AdminDashboard: React.FC = () => {
                     <div key={inq.id} className="bg-atelier-cream p-6 border border-atelier-charcoal/10">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-atelier-charcoal/10 mb-4 gap-2">
                         <div>
-                          <h3 className="font-serif text-lg text-atelier-charcoal font-medium">
-                            {inq.clientName}
-                          </h3>
+                          <h3 className="font-serif text-lg text-atelier-charcoal font-medium">{inq.clientName}</h3>
                           <div className="text-[12px] text-atelier-muted space-x-3 mt-0.5">
                             <span>{inq.email}</span>
                             {inq.phone && <span>· {inq.phone}</span>}
@@ -727,7 +804,6 @@ export const AdminDashboard: React.FC = () => {
                             <option value="Contacted">Status: Contacted</option>
                             <option value="Completed">Status: Completed</option>
                           </select>
-
                           <button onClick={() => handleDeleteInquiry(inq.id)} className="text-atelier-muted hover:text-red-700 p-1" title="Delete">
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -751,7 +827,7 @@ export const AdminDashboard: React.FC = () => {
 
                       <div className="bg-atelier-ivory p-4 text-xs leading-relaxed text-atelier-charcoal/90 border border-atelier-charcoal/5 whitespace-pre-line">
                         <span className="block text-[9px] uppercase tracking-wider text-atelier-muted mb-1 font-mono">
-                          Client Note / Parameter Summary:
+                          Client Note:
                         </span>
                         {inq.message}
                       </div>
@@ -765,7 +841,7 @@ export const AdminDashboard: React.FC = () => {
                           href={`mailto:${inq.email}?subject=RE: Atelier Architectural Consultation — ${inq.projectType}`}
                           className="text-atelier-olive hover:underline font-medium uppercase tracking-wider"
                         >
-                          Reply directly via Email →
+                          Reply via Email →
                         </a>
                       </div>
                     </div>
@@ -775,17 +851,13 @@ export const AdminDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* ================= TAB 3: SERVICES ================= */}
+          {/* ================= TAB: SERVICES ================= */}
           {activeTab === 'services' && (
             <div>
               <div className="flex justify-between items-center pb-6 mb-6 border-b border-atelier-charcoal/10">
                 <div>
-                  <h1 className="font-serif text-2xl md:text-3xl text-atelier-charcoal">
-                    Architectural Disciplines & Scopes
-                  </h1>
-                  <p className="text-xs text-atelier-muted mt-1">
-                    Control studio service offerings and deliverables published on public site.
-                  </p>
+                  <h1 className="font-serif text-2xl md:text-3xl text-atelier-charcoal">Studio Disciplines</h1>
+                  <p className="text-xs text-atelier-muted mt-1">Configure service offerings and engagement scopes.</p>
                 </div>
                 <button
                   onClick={openNewServiceModal}
@@ -835,16 +907,110 @@ export const AdminDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* ================= TAB 4: SETTINGS ================= */}
+          {/* ================= TAB: TEAM MEMBERS (YANGI!) ================= */}
+          {activeTab === 'team' && (
+            <div>
+              <div className="flex justify-between items-center pb-6 mb-6 border-b border-atelier-charcoal/10">
+                <div>
+                  <h1 className="font-serif text-2xl md:text-3xl text-atelier-charcoal">Studio Team Members ({team.length})</h1>
+                  <p className="text-xs text-atelier-muted mt-1">Manage founders, principal architects, and interior stylists shown on `/studio`.</p>
+                </div>
+                <button
+                  onClick={openNewTeamModal}
+                  className="inline-flex items-center space-x-2 px-4 py-2 bg-atelier-charcoal text-atelier-ivory text-[11px] tracking-editorial uppercase hover:bg-atelier-dark transition-all"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Member</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {team.map((m) => (
+                  <div key={m.id} className="bg-atelier-cream p-4 border border-atelier-charcoal/10 flex flex-col justify-between">
+                    <div>
+                      <div className="aspect-[4/5] overflow-hidden bg-atelier-sand mb-3 relative">
+                        <img src={m.image} alt={m.name} className="w-full h-full object-cover" />
+                        <div className="absolute top-2 right-2 flex space-x-1 bg-atelier-dark/70 p-1 rounded">
+                          <button onClick={() => openEditTeamModal(m)} className="text-atelier-ivory hover:text-atelier-sand p-1">
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => handleDeleteTeam(m.id, m.name)} className="text-atelier-ivory hover:text-red-400 p-1">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      <h4 className="font-serif text-base text-atelier-charcoal font-medium">{m.name}</h4>
+                      <span className="text-[10px] tracking-editorial uppercase text-atelier-olive block mt-0.5">{m.role}</span>
+                      <span className="text-[10px] text-atelier-muted block mb-2">{m.location}</span>
+                      <p className="text-[11px] text-atelier-charcoal/80 leading-relaxed line-clamp-3">{m.bio}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ================= TAB: MATERIALS LIBRARY (YANGI!) ================= */}
+          {activeTab === 'materials' && (
+            <div>
+              <div className="flex justify-between items-center pb-6 mb-6 border-b border-atelier-charcoal/10">
+                <div>
+                  <h1 className="font-serif text-2xl md:text-3xl text-atelier-charcoal">Architectural Material Library ({materials.length})</h1>
+                  <p className="text-xs text-atelier-muted mt-1">Configure tactile specimens, stone quarries, and timber patinas for the Material Inspector.</p>
+                </div>
+                <button
+                  onClick={openNewMaterialModal}
+                  className="inline-flex items-center space-x-2 px-4 py-2 bg-atelier-charcoal text-atelier-ivory text-[11px] tracking-editorial uppercase hover:bg-atelier-dark transition-all"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Material Specimen</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {materials.map((mat) => (
+                  <div key={mat.id} className="bg-atelier-cream p-5 border border-atelier-charcoal/10 flex flex-col justify-between">
+                    <div>
+                      <div className="aspect-[16/10] overflow-hidden bg-atelier-sand mb-3 relative">
+                        <img src={mat.image} alt={mat.name} className="w-full h-full object-cover" />
+                        <span className="absolute top-2 left-2 bg-atelier-dark/80 text-atelier-ivory px-2 py-0.5 text-[9px] uppercase tracking-wider">
+                          {mat.category}
+                        </span>
+                        <div className="absolute top-2 right-2 flex space-x-1 bg-atelier-dark/70 p-1 rounded">
+                          <button onClick={() => openEditMaterialModal(mat)} className="text-atelier-ivory hover:text-atelier-sand p-1">
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => handleDeleteMaterial(mat.id, mat.name)} className="text-atelier-ivory hover:text-red-400 p-1">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <h4 className="font-serif text-lg text-atelier-charcoal font-medium">{mat.name}</h4>
+                      <span className="text-[10px] text-atelier-olive block mb-2">{mat.origin}</span>
+                      <p className="text-[11px] text-atelier-charcoal/80 leading-relaxed mb-3 line-clamp-2">{mat.description}</p>
+                      
+                      <div className="text-[10px] text-atelier-muted border-t border-atelier-charcoal/10 pt-2 space-y-1">
+                        <div><strong className="text-atelier-charcoal">Feel:</strong> {mat.tactility}</div>
+                        <div><strong className="text-atelier-charcoal">Role:</strong> {mat.architecturalRole}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ================= TAB: MASTER SETTINGS (HOMEPAGE & STUDIO) ================= */}
           {activeTab === 'settings' && (
             <div className="bg-atelier-cream p-8 border border-atelier-charcoal/10">
               <div className="flex items-center justify-between mb-8 pb-4 border-b border-atelier-charcoal/10">
                 <div>
                   <h1 className="font-serif text-2xl md:text-3xl text-atelier-charcoal">
-                    Editorial & Homepage Settings
+                    Studio Master Settings
                   </h1>
                   <p className="text-xs text-atelier-muted mt-1">
-                    Update the hero headline, hero photograph, and studio addresses.
+                    Control all homepage text blocks, hero metadata, methodology steps, and physical office coordinates.
                   </p>
                 </div>
                 {saveSuccess && (
@@ -855,16 +1021,15 @@ export const AdminDashboard: React.FC = () => {
                 )}
               </div>
 
-              <form onSubmit={handleSaveSettings} className="space-y-6 text-xs">
-                {/* HERO */}
+              <form onSubmit={handleSaveSettings} className="space-y-8 text-xs">
+                {/* 1. HERO SECTION & STATS */}
                 <div className="space-y-4 pb-6 border-b border-atelier-charcoal/10">
-                  <span className="text-[10px] tracking-editorial uppercase text-atelier-olive font-medium block">
-                    1. Hero Section
+                  <span className="text-[11px] tracking-editorial uppercase text-atelier-olive font-semibold block">
+                    1. Hero Section & Metadata Bar
                   </span>
+
                   <div>
-                    <label className="block text-[11px] uppercase tracking-wider text-atelier-charcoal mb-1">
-                      Hero Eyebrow Tagline
-                    </label>
+                    <label className="block text-[11px] uppercase tracking-wider text-atelier-charcoal mb-1">Hero Tagline</label>
                     <input
                       type="text"
                       value={settings.heroTagline || ''}
@@ -872,10 +1037,9 @@ export const AdminDashboard: React.FC = () => {
                       className="w-full bg-atelier-ivory border border-atelier-charcoal/20 px-3 py-2 text-sm focus:outline-none"
                     />
                   </div>
+
                   <div>
-                    <label className="block text-[11px] uppercase tracking-wider text-atelier-charcoal mb-1">
-                      Main Hero Headline (Serif)
-                    </label>
+                    <label className="block text-[11px] uppercase tracking-wider text-atelier-charcoal mb-1">Main Hero Headline (Serif)</label>
                     <input
                       type="text"
                       value={settings.heroTitle || ''}
@@ -883,21 +1047,19 @@ export const AdminDashboard: React.FC = () => {
                       className="w-full bg-atelier-ivory border border-atelier-charcoal/20 px-3 py-2 text-sm focus:outline-none font-serif"
                     />
                   </div>
+
                   <div>
-                    <label className="block text-[11px] uppercase tracking-wider text-atelier-charcoal mb-1">
-                      Hero Subtitle Narrative
-                    </label>
+                    <label className="block text-[11px] uppercase tracking-wider text-atelier-charcoal mb-1">Hero Subtitle</label>
                     <textarea
-                      rows={3}
+                      rows={2}
                       value={settings.heroSubtitle || ''}
                       onChange={(e) => setSettings({ ...settings, heroSubtitle: e.target.value })}
                       className="w-full bg-atelier-ivory border border-atelier-charcoal/20 p-3 text-xs focus:outline-none"
                     />
                   </div>
+
                   <div>
-                    <label className="block text-[11px] uppercase tracking-wider text-atelier-charcoal mb-1">
-                      Hero Image URL
-                    </label>
+                    <label className="block text-[11px] uppercase tracking-wider text-atelier-charcoal mb-1">Hero Background Image URL</label>
                     <input
                       type="url"
                       value={settings.heroImage || ''}
@@ -905,17 +1067,56 @@ export const AdminDashboard: React.FC = () => {
                       className="w-full bg-atelier-ivory border border-atelier-charcoal/20 px-3 py-2 text-xs focus:outline-none"
                     />
                   </div>
+
+                  {/* 4 Stats */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+                    <div>
+                      <label className="block text-[9px] uppercase text-atelier-muted mb-1">Metadata: Locations</label>
+                      <input
+                        type="text"
+                        value={settings.heroStatsLocations || ''}
+                        onChange={(e) => setSettings({ ...settings, heroStatsLocations: e.target.value })}
+                        className="w-full bg-atelier-ivory border border-atelier-charcoal/20 px-2.5 py-1.5 text-xs focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] uppercase text-atelier-muted mb-1">Metadata: Discipline</label>
+                      <input
+                        type="text"
+                        value={settings.heroStatsDiscipline || ''}
+                        onChange={(e) => setSettings({ ...settings, heroStatsDiscipline: e.target.value })}
+                        className="w-full bg-atelier-ivory border border-atelier-charcoal/20 px-2.5 py-1.5 text-xs focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] uppercase text-atelier-muted mb-1">Metadata: Materiality</label>
+                      <input
+                        type="text"
+                        value={settings.heroStatsMateriality || ''}
+                        onChange={(e) => setSettings({ ...settings, heroStatsMateriality: e.target.value })}
+                        className="w-full bg-atelier-ivory border border-atelier-charcoal/20 px-2.5 py-1.5 text-xs focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] uppercase text-atelier-muted mb-1">Metadata: Ethos</label>
+                      <input
+                        type="text"
+                        value={settings.heroStatsEthos || ''}
+                        onChange={(e) => setSettings({ ...settings, heroStatsEthos: e.target.value })}
+                        className="w-full bg-atelier-ivory border border-atelier-charcoal/20 px-2.5 py-1.5 text-xs focus:outline-none"
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                {/* MANIFESTO */}
+                {/* 2. MANIFESTO & PRINCIPLES */}
                 <div className="space-y-4 pb-6 border-b border-atelier-charcoal/10">
-                  <span className="text-[10px] tracking-editorial uppercase text-atelier-olive font-medium block">
-                    2. Studio Manifesto
+                  <span className="text-[11px] tracking-editorial uppercase text-atelier-olive font-semibold block">
+                    2. Studio Manifesto & Core Principles
                   </span>
+
                   <div>
-                    <label className="block text-[11px] uppercase tracking-wider text-atelier-charcoal mb-1">
-                      Manifesto Headline
-                    </label>
+                    <label className="block text-[11px] uppercase tracking-wider text-atelier-charcoal mb-1">Manifesto Headline</label>
                     <input
                       type="text"
                       value={settings.manifestoTitle || ''}
@@ -923,10 +1124,9 @@ export const AdminDashboard: React.FC = () => {
                       className="w-full bg-atelier-ivory border border-atelier-charcoal/20 px-3 py-2 text-sm focus:outline-none font-serif"
                     />
                   </div>
+
                   <div>
-                    <label className="block text-[11px] uppercase tracking-wider text-atelier-charcoal mb-1">
-                      Lead Thought
-                    </label>
+                    <label className="block text-[11px] uppercase tracking-wider text-atelier-charcoal mb-1">Lead Thought (Italic)</label>
                     <textarea
                       rows={2}
                       value={settings.manifestoLead || ''}
@@ -934,10 +1134,9 @@ export const AdminDashboard: React.FC = () => {
                       className="w-full bg-atelier-ivory border border-atelier-charcoal/20 p-3 text-xs focus:outline-none font-serif italic"
                     />
                   </div>
+
                   <div>
-                    <label className="block text-[11px] uppercase tracking-wider text-atelier-charcoal mb-1">
-                      Detailed Narrative Body
-                    </label>
+                    <label className="block text-[11px] uppercase tracking-wider text-atelier-charcoal mb-1">Detailed Narrative</label>
                     <textarea
                       rows={3}
                       value={settings.manifestoBody || ''}
@@ -945,12 +1144,174 @@ export const AdminDashboard: React.FC = () => {
                       className="w-full bg-atelier-ivory border border-atelier-charcoal/20 p-3 text-xs focus:outline-none"
                     />
                   </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                    <div>
+                      <label className="block text-[10px] uppercase text-atelier-muted mb-1">Principle 1 Title</label>
+                      <input
+                        type="text"
+                        value={settings.principle1Title || ''}
+                        onChange={(e) => setSettings({ ...settings, principle1Title: e.target.value })}
+                        className="w-full bg-atelier-ivory border border-atelier-charcoal/20 px-3 py-2 text-xs focus:outline-none mb-2 font-medium"
+                      />
+                      <textarea
+                        rows={2}
+                        value={settings.principle1Text || ''}
+                        onChange={(e) => setSettings({ ...settings, principle1Text: e.target.value })}
+                        className="w-full bg-atelier-ivory border border-atelier-charcoal/20 p-2 text-xs focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] uppercase text-atelier-muted mb-1">Principle 2 Title</label>
+                      <input
+                        type="text"
+                        value={settings.principle2Title || ''}
+                        onChange={(e) => setSettings({ ...settings, principle2Title: e.target.value })}
+                        className="w-full bg-atelier-ivory border border-atelier-charcoal/20 px-3 py-2 text-xs focus:outline-none mb-2 font-medium"
+                      />
+                      <textarea
+                        rows={2}
+                        value={settings.principle2Text || ''}
+                        onChange={(e) => setSettings({ ...settings, principle2Text: e.target.value })}
+                        className="w-full bg-atelier-ivory border border-atelier-charcoal/20 p-2 text-xs focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider text-atelier-charcoal mb-1">Studio Atmosphere Wide Image URL</label>
+                    <input
+                      type="url"
+                      value={settings.studioWorkspaceImage || ''}
+                      onChange={(e) => setSettings({ ...settings, studioWorkspaceImage: e.target.value })}
+                      className="w-full bg-atelier-ivory border border-atelier-charcoal/20 px-3 py-2 text-xs focus:outline-none"
+                    />
+                  </div>
                 </div>
 
-                {/* COORDINATES */}
+                {/* 3. METHODOLOGY 4 STEPS */}
+                <div className="space-y-4 pb-6 border-b border-atelier-charcoal/10">
+                  <span className="text-[11px] tracking-editorial uppercase text-atelier-olive font-semibold block">
+                    3. Methodology (4 Spatial Phases)
+                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="bg-atelier-ivory p-3.5 border border-atelier-charcoal/10">
+                      <span className="text-[10px] font-mono text-atelier-muted block mb-1">Step 01 (Dialogue)</span>
+                      <input
+                        type="text"
+                        value={settings.step1Title || ''}
+                        onChange={(e) => setSettings({ ...settings, step1Title: e.target.value })}
+                        className="w-full bg-atelier-cream border border-atelier-charcoal/15 px-2.5 py-1.5 text-xs focus:outline-none mb-2 font-serif font-medium"
+                      />
+                      <textarea
+                        rows={2}
+                        value={settings.step1Text || ''}
+                        onChange={(e) => setSettings({ ...settings, step1Text: e.target.value })}
+                        className="w-full bg-atelier-cream border border-atelier-charcoal/15 p-2 text-xs focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="bg-atelier-ivory p-3.5 border border-atelier-charcoal/10">
+                      <span className="text-[10px] font-mono text-atelier-muted block mb-1">Step 02 (Concept)</span>
+                      <input
+                        type="text"
+                        value={settings.step2Title || ''}
+                        onChange={(e) => setSettings({ ...settings, step2Title: e.target.value })}
+                        className="w-full bg-atelier-cream border border-atelier-charcoal/15 px-2.5 py-1.5 text-xs focus:outline-none mb-2 font-serif font-medium"
+                      />
+                      <textarea
+                        rows={2}
+                        value={settings.step2Text || ''}
+                        onChange={(e) => setSettings({ ...settings, step2Text: e.target.value })}
+                        className="w-full bg-atelier-cream border border-atelier-charcoal/15 p-2 text-xs focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="bg-atelier-ivory p-3.5 border border-atelier-charcoal/10">
+                      <span className="text-[10px] font-mono text-atelier-muted block mb-1">Step 03 (Materiality)</span>
+                      <input
+                        type="text"
+                        value={settings.step3Title || ''}
+                        onChange={(e) => setSettings({ ...settings, step3Title: e.target.value })}
+                        className="w-full bg-atelier-cream border border-atelier-charcoal/15 px-2.5 py-1.5 text-xs focus:outline-none mb-2 font-serif font-medium"
+                      />
+                      <textarea
+                        rows={2}
+                        value={settings.step3Text || ''}
+                        onChange={(e) => setSettings({ ...settings, step3Text: e.target.value })}
+                        className="w-full bg-atelier-cream border border-atelier-charcoal/15 p-2 text-xs focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="bg-atelier-ivory p-3.5 border border-atelier-charcoal/10">
+                      <span className="text-[10px] font-mono text-atelier-muted block mb-1">Step 04 (Realization)</span>
+                      <input
+                        type="text"
+                        value={settings.step4Title || ''}
+                        onChange={(e) => setSettings({ ...settings, step4Title: e.target.value })}
+                        className="w-full bg-atelier-cream border border-atelier-charcoal/15 px-2.5 py-1.5 text-xs focus:outline-none mb-2 font-serif font-medium"
+                      />
+                      <textarea
+                        rows={2}
+                        value={settings.step4Text || ''}
+                        onChange={(e) => setSettings({ ...settings, step4Text: e.target.value })}
+                        className="w-full bg-atelier-cream border border-atelier-charcoal/15 p-2 text-xs focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. CLOSING CTA */}
+                <div className="space-y-4 pb-6 border-b border-atelier-charcoal/10">
+                  <span className="text-[11px] tracking-editorial uppercase text-atelier-olive font-semibold block">
+                    4. Closing Consultation CTA Section
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] uppercase text-atelier-muted mb-1">CTA Eyebrow</label>
+                      <input
+                        type="text"
+                        value={settings.ctaEyebrow || ''}
+                        onChange={(e) => setSettings({ ...settings, ctaEyebrow: e.target.value })}
+                        className="w-full bg-atelier-ivory border border-atelier-charcoal/20 px-3 py-2 text-xs focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase text-atelier-muted mb-1">Main Heading</label>
+                      <input
+                        type="text"
+                        value={settings.ctaTitle || ''}
+                        onChange={(e) => setSettings({ ...settings, ctaTitle: e.target.value })}
+                        className="w-full bg-atelier-ivory border border-atelier-charcoal/20 px-3 py-2 text-xs focus:outline-none font-serif"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase text-atelier-muted mb-1">Italic Subtitle</label>
+                    <input
+                      type="text"
+                      value={settings.ctaItalicSubtitle || ''}
+                      onChange={(e) => setSettings({ ...settings, ctaItalicSubtitle: e.target.value })}
+                      className="w-full bg-atelier-ivory border border-atelier-charcoal/20 px-3 py-2 text-xs focus:outline-none font-serif italic"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase text-atelier-muted mb-1">Description</label>
+                    <textarea
+                      rows={2}
+                      value={settings.ctaDescription || ''}
+                      onChange={(e) => setSettings({ ...settings, ctaDescription: e.target.value })}
+                      className="w-full bg-atelier-ivory border border-atelier-charcoal/20 p-2.5 text-xs focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* 5. LOCATIONS & COORDINATES */}
                 <div className="space-y-4 pb-6">
-                  <span className="text-[10px] tracking-editorial uppercase text-atelier-olive font-medium block">
-                    3. Contact & Studio Locations
+                  <span className="text-[11px] tracking-editorial uppercase text-atelier-olive font-semibold block">
+                    5. Office Coordinates & Contact
                   </span>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -1010,14 +1371,14 @@ export const AdminDashboard: React.FC = () => {
                     className="inline-flex items-center space-x-2 px-8 py-3.5 bg-atelier-charcoal text-atelier-ivory text-[11px] tracking-editorial uppercase hover:bg-atelier-dark transition-all"
                   >
                     <Save className="w-4 h-4" />
-                    <span>Publish Changes</span>
+                    <span>Publish Master Settings</span>
                   </button>
                 </div>
               </form>
             </div>
           )}
 
-          {/* ================= TAB 5: SECURITY & CREDENTIALS ================= */}
+          {/* ================= TAB: SECURITY ================= */}
           {activeTab === 'security' && (
             <div className="max-w-2xl bg-atelier-cream p-8 border border-atelier-charcoal/10">
               <div className="pb-4 mb-6 border-b border-atelier-charcoal/10">
@@ -1057,7 +1418,7 @@ export const AdminDashboard: React.FC = () => {
                   <input
                     type="password"
                     required
-                    placeholder="Enter current password (default: atelier2026)"
+                    placeholder="Enter current password"
                     value={securityForm.currentPassword}
                     onChange={(e) => setSecurityForm({ ...securityForm, currentPassword: e.target.value })}
                     className="w-full bg-atelier-ivory border border-atelier-charcoal/20 px-3.5 py-2.5 text-sm focus:outline-none focus:border-atelier-charcoal"
@@ -1160,11 +1521,10 @@ export const AdminDashboard: React.FC = () => {
             <h3 className="font-serif text-2xl text-atelier-charcoal mb-6 pb-3 border-b border-atelier-charcoal/10">
               {editingProjectId ? 'Edit Project Case Study' : 'Curate New Architectural Project'}
             </h3>
-
             <form onSubmit={handleSaveProject} className="space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] uppercase tracking-wider text-atelier-muted mb-1">Project Title *</label>
+                  <label className="block text-[10px] uppercase text-atelier-muted mb-1">Title *</label>
                   <input
                     type="text"
                     required
@@ -1174,7 +1534,7 @@ export const AdminDashboard: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase tracking-wider text-atelier-muted mb-1">Category</label>
+                  <label className="block text-[10px] uppercase text-atelier-muted mb-1">Category</label>
                   <select
                     value={projectForm.category || 'Residential'}
                     onChange={(e) => setProjectForm({ ...projectForm, category: e.target.value as any })}
@@ -1188,7 +1548,7 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase tracking-wider text-atelier-muted mb-1">Subtitle *</label>
+                <label className="block text-[10px] uppercase text-atelier-muted mb-1">Subtitle *</label>
                 <input
                   type="text"
                   required
@@ -1200,7 +1560,7 @@ export const AdminDashboard: React.FC = () => {
 
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-[10px] uppercase tracking-wider text-atelier-muted mb-1">Location</label>
+                  <label className="block text-[10px] uppercase text-atelier-muted mb-1">Location</label>
                   <input
                     type="text"
                     value={projectForm.location || ''}
@@ -1209,7 +1569,7 @@ export const AdminDashboard: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase tracking-wider text-atelier-muted mb-1">Year</label>
+                  <label className="block text-[10px] uppercase text-atelier-muted mb-1">Year</label>
                   <input
                     type="text"
                     value={projectForm.year || ''}
@@ -1218,7 +1578,7 @@ export const AdminDashboard: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase tracking-wider text-atelier-muted mb-1">Area</label>
+                  <label className="block text-[10px] uppercase text-atelier-muted mb-1">Area</label>
                   <input
                     type="text"
                     value={projectForm.area || ''}
@@ -1229,7 +1589,7 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase tracking-wider text-atelier-muted mb-1">Hero Image URL</label>
+                <label className="block text-[10px] uppercase text-atelier-muted mb-1">Hero Image URL</label>
                 <input
                   type="url"
                   value={projectForm.heroImage || ''}
@@ -1239,7 +1599,7 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase tracking-wider text-atelier-muted mb-1">Overview</label>
+                <label className="block text-[10px] uppercase text-atelier-muted mb-1">Overview</label>
                 <textarea
                   rows={3}
                   value={projectForm.overview || ''}
@@ -1249,7 +1609,7 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase tracking-wider text-atelier-muted mb-1">Approach</label>
+                <label className="block text-[10px] uppercase text-atelier-muted mb-1">Approach</label>
                 <textarea
                   rows={3}
                   value={projectForm.approach || ''}
@@ -1259,7 +1619,7 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase tracking-wider text-atelier-muted mb-1">Materials</label>
+                <label className="block text-[10px] uppercase text-atelier-muted mb-1">Materials</label>
                 <div className="flex gap-2 mb-2">
                   <input
                     type="text"
@@ -1268,7 +1628,7 @@ export const AdminDashboard: React.FC = () => {
                     placeholder="e.g. Travertine"
                     className="flex-1 bg-atelier-cream border border-atelier-charcoal/20 px-3 py-1.5 text-xs focus:outline-none"
                   />
-                  <button type="button" onClick={addMaterial} className="px-3 py-1.5 bg-atelier-charcoal text-atelier-ivory text-[10px] uppercase">
+                  <button type="button" onClick={addMaterialTag} className="px-3 py-1.5 bg-atelier-charcoal text-atelier-ivory text-[10px] uppercase">
                     Add
                   </button>
                 </div>
@@ -1276,7 +1636,7 @@ export const AdminDashboard: React.FC = () => {
                   {projectForm.materials?.map((m, idx) => (
                     <span key={idx} className="bg-atelier-sand/60 px-2.5 py-1 text-[11px] flex items-center space-x-1">
                       <span>{m}</span>
-                      <button type="button" onClick={() => removeMaterial(idx)} className="hover:text-red-700 ml-1">×</button>
+                      <button type="button" onClick={() => removeMaterialTag(idx)} className="hover:text-red-700 ml-1">×</button>
                     </span>
                   ))}
                 </div>
@@ -1315,11 +1675,10 @@ export const AdminDashboard: React.FC = () => {
             <h3 className="font-serif text-2xl text-atelier-charcoal mb-6 pb-3 border-b border-atelier-charcoal/10">
               {editingServiceId ? 'Edit Discipline' : 'Add New Discipline'}
             </h3>
-
             <form onSubmit={handleSaveService} className="space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] uppercase tracking-wider text-atelier-muted mb-1">Title *</label>
+                  <label className="block text-[10px] uppercase text-atelier-muted mb-1">Title *</label>
                   <input
                     type="text"
                     required
@@ -1329,7 +1688,7 @@ export const AdminDashboard: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase tracking-wider text-atelier-muted mb-1">Tag</label>
+                  <label className="block text-[10px] uppercase text-atelier-muted mb-1">Tag</label>
                   <input
                     type="text"
                     value={serviceForm.tag || ''}
@@ -1340,7 +1699,7 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase tracking-wider text-atelier-muted mb-1">Tagline</label>
+                <label className="block text-[10px] uppercase text-atelier-muted mb-1">Tagline</label>
                 <input
                   type="text"
                   value={serviceForm.tagline || ''}
@@ -1350,7 +1709,7 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase tracking-wider text-atelier-muted mb-1">Image URL</label>
+                <label className="block text-[10px] uppercase text-atelier-muted mb-1">Image URL</label>
                 <input
                   type="url"
                   value={serviceForm.image || ''}
@@ -1360,7 +1719,7 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase tracking-wider text-atelier-muted mb-1">Description</label>
+                <label className="block text-[10px] uppercase text-atelier-muted mb-1">Description</label>
                 <textarea
                   rows={3}
                   value={serviceForm.description || ''}
@@ -1370,7 +1729,7 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase tracking-wider text-atelier-muted mb-1">Scope Items</label>
+                <label className="block text-[10px] uppercase text-atelier-muted mb-1">Scope Items</label>
                 <div className="flex gap-2 mb-2">
                   <input
                     type="text"
@@ -1399,6 +1758,197 @@ export const AdminDashboard: React.FC = () => {
                 </button>
                 <button type="submit" className="px-6 py-2.5 bg-atelier-charcoal text-atelier-ivory text-[11px] uppercase tracking-wider hover:bg-atelier-dark">
                   Save Discipline
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ADD / EDIT TEAM MEMBER */}
+      {showTeamModal && (
+        <div className="fixed inset-0 z-50 bg-atelier-dark/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-atelier-ivory max-w-lg w-full p-8 border border-atelier-charcoal/20 shadow-xl my-8">
+            <h3 className="font-serif text-2xl text-atelier-charcoal mb-6 pb-3 border-b border-atelier-charcoal/10">
+              {editingTeamId ? 'Edit Team Member' : 'Add Team Member'}
+            </h3>
+            <form onSubmit={handleSaveTeam} className="space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] uppercase text-atelier-muted mb-1">Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={teamForm.name || ''}
+                    onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
+                    className="w-full bg-atelier-cream border border-atelier-charcoal/20 px-3 py-2 text-sm focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase text-atelier-muted mb-1">Role / Job Title *</label>
+                  <input
+                    type="text"
+                    required
+                    value={teamForm.role || ''}
+                    onChange={(e) => setTeamForm({ ...teamForm, role: e.target.value })}
+                    className="w-full bg-atelier-cream border border-atelier-charcoal/20 px-3 py-2 text-sm focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] uppercase text-atelier-muted mb-1">Location Base</label>
+                  <input
+                    type="text"
+                    value={teamForm.location || ''}
+                    onChange={(e) => setTeamForm({ ...teamForm, location: e.target.value })}
+                    placeholder="e.g. Milan / Kyoto"
+                    className="w-full bg-atelier-cream border border-atelier-charcoal/20 px-3 py-2 text-xs focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase text-atelier-muted mb-1">Portrait Photo URL</label>
+                  <input
+                    type="url"
+                    value={teamForm.image || ''}
+                    onChange={(e) => setTeamForm({ ...teamForm, image: e.target.value })}
+                    className="w-full bg-atelier-cream border border-atelier-charcoal/20 px-3 py-2 text-xs focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase text-atelier-muted mb-1">Architectural Bio & Background</label>
+                <textarea
+                  rows={3}
+                  value={teamForm.bio || ''}
+                  onChange={(e) => setTeamForm({ ...teamForm, bio: e.target.value })}
+                  placeholder="Academic training, materials focus, or project heritage..."
+                  className="w-full bg-atelier-cream border border-atelier-charcoal/20 p-2.5 text-xs focus:outline-none"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-6 border-t border-atelier-charcoal/10">
+                <button type="button" onClick={() => setShowTeamModal(false)} className="px-5 py-2.5 border border-atelier-charcoal/20 text-atelier-charcoal text-[11px] uppercase tracking-wider">
+                  Cancel
+                </button>
+                <button type="submit" className="px-6 py-2.5 bg-atelier-charcoal text-atelier-ivory text-[11px] uppercase tracking-wider hover:bg-atelier-dark">
+                  Save Member
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ADD / EDIT MATERIAL SPECIMEN */}
+      {showMaterialModal && (
+        <div className="fixed inset-0 z-50 bg-atelier-dark/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-atelier-ivory max-w-xl w-full p-8 border border-atelier-charcoal/20 shadow-xl my-8">
+            <h3 className="font-serif text-2xl text-atelier-charcoal mb-6 pb-3 border-b border-atelier-charcoal/10">
+              {editingMaterialId ? 'Edit Material Specimen' : 'Add Material Specimen'}
+            </h3>
+            <form onSubmit={handleSaveMaterial} className="space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] uppercase text-atelier-muted mb-1">Material Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={materialForm.name || ''}
+                    onChange={(e) => setMaterialForm({ ...materialForm, name: e.target.value })}
+                    placeholder="e.g. Roman Silver Travertine"
+                    className="w-full bg-atelier-cream border border-atelier-charcoal/20 px-3 py-2 text-sm focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase text-atelier-muted mb-1">Category</label>
+                  <select
+                    value={materialForm.category || 'Stone'}
+                    onChange={(e) => setMaterialForm({ ...materialForm, category: e.target.value as any })}
+                    className="w-full bg-atelier-cream border border-atelier-charcoal/20 px-3 py-2 text-sm focus:outline-none"
+                  >
+                    <option value="Stone">Stone</option>
+                    <option value="Timber">Timber</option>
+                    <option value="Plaster">Plaster</option>
+                    <option value="Metal">Metal</option>
+                    <option value="Fabric">Fabric</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] uppercase text-atelier-muted mb-1">Origin / Quarry</label>
+                  <input
+                    type="text"
+                    value={materialForm.origin || ''}
+                    onChange={(e) => setMaterialForm({ ...materialForm, origin: e.target.value })}
+                    placeholder="e.g. Tivoli, Italy"
+                    className="w-full bg-atelier-cream border border-atelier-charcoal/20 px-3 py-2 text-xs focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase text-atelier-muted mb-1">Texture Image URL</label>
+                  <input
+                    type="url"
+                    value={materialForm.image || ''}
+                    onChange={(e) => setMaterialForm({ ...materialForm, image: e.target.value })}
+                    className="w-full bg-atelier-cream border border-atelier-charcoal/20 px-3 py-2 text-xs focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase text-atelier-muted mb-1">Tactile & Sensory Feel</label>
+                <input
+                  type="text"
+                  value={materialForm.tactility || ''}
+                  onChange={(e) => setMaterialForm({ ...materialForm, tactility: e.target.value })}
+                  placeholder="e.g. Velvety matte with subtle grain"
+                  className="w-full bg-atelier-cream border border-atelier-charcoal/20 px-3 py-2 text-xs focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase text-atelier-muted mb-1">Patina Behavior</label>
+                <input
+                  type="text"
+                  value={materialForm.patinaBehavior || ''}
+                  onChange={(e) => setMaterialForm({ ...materialForm, patinaBehavior: e.target.value })}
+                  placeholder="e.g. Oxidizes gracefully with touch"
+                  className="w-full bg-atelier-cream border border-atelier-charcoal/20 px-3 py-2 text-xs focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase text-atelier-muted mb-1">Primary Architectural Role</label>
+                <input
+                  type="text"
+                  value={materialForm.architecturalRole || ''}
+                  onChange={(e) => setMaterialForm({ ...materialForm, architecturalRole: e.target.value })}
+                  placeholder="e.g. Kitchen islands and fireplace hearths"
+                  className="w-full bg-atelier-cream border border-atelier-charcoal/20 px-3 py-2 text-xs focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase text-atelier-muted mb-1">Detailed Description</label>
+                <textarea
+                  rows={2}
+                  value={materialForm.description || ''}
+                  onChange={(e) => setMaterialForm({ ...materialForm, description: e.target.value })}
+                  className="w-full bg-atelier-cream border border-atelier-charcoal/20 p-2.5 text-xs focus:outline-none"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-6 border-t border-atelier-charcoal/10">
+                <button type="button" onClick={() => setShowMaterialModal(false)} className="px-5 py-2.5 border border-atelier-charcoal/20 text-atelier-charcoal text-[11px] uppercase tracking-wider">
+                  Cancel
+                </button>
+                <button type="submit" className="px-6 py-2.5 bg-atelier-charcoal text-atelier-ivory text-[11px] uppercase tracking-wider hover:bg-atelier-dark">
+                  Save Specimen
                 </button>
               </div>
             </form>

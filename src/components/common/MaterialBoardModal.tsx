@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { studioMaterials, ArchitectureMaterial } from '../../data/materialsData';
+import React, { useState, useEffect } from 'react';
+import { ArchitectureMaterial } from '../../types';
+import { api } from '../../services/api';
+import { studioMaterials } from '../../data/materialsData';
 import { X, Sparkles, MapPin, Compass } from 'lucide-react';
 
 interface MaterialBoardModalProps {
@@ -13,18 +15,27 @@ export const MaterialBoardModal: React.FC<MaterialBoardModalProps> = ({
   onClose,
   filterMaterials,
 }) => {
+  const [materials, setMaterials] = useState<ArchitectureMaterial[]>(studioMaterials);
   const [selectedMaterial, setSelectedMaterial] = useState<ArchitectureMaterial>(studioMaterials[0]);
+
+  useEffect(() => {
+    api.getMaterials().then((data) => {
+      if (data && data.length) {
+        setMaterials(data);
+        setSelectedMaterial(data[0]);
+      }
+    });
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  // Filter materials if specific project specifies them, or show all
   const displayedMaterials = filterMaterials && filterMaterials.length > 0
-    ? studioMaterials.filter((m) =>
+    ? materials.filter((m) =>
         filterMaterials.some((fm) => m.name.toLowerCase().includes(fm.toLowerCase()) || fm.toLowerCase().includes(m.name.toLowerCase()))
       )
-    : studioMaterials;
+    : materials;
 
-  const currentList = displayedMaterials.length > 0 ? displayedMaterials : studioMaterials;
+  const currentList = displayedMaterials.length > 0 ? displayedMaterials : materials;
 
   return (
     <div className="fixed inset-0 z-50 bg-atelier-dark/80 backdrop-blur-md flex items-center justify-center p-4 md:p-8 animate-fade-in">

@@ -1,14 +1,81 @@
-import { Project, StudioSettings, StudioService } from '../types';
+import { Project, StudioSettings, StudioService, TeamMember } from '../types';
+
+export const fallbackTeamMembers: TeamMember[] = [
+  {
+    id: "team-1",
+    name: "Julian Vance",
+    role: "Creative Director & Founder",
+    location: "Milan / London",
+    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80",
+    bio: "Formally trained at ETH Zurich and the Architectural Association, Julian steers the aesthetic and philosophical ethos of the studio."
+  },
+  {
+    id: "team-2",
+    name: "Kaori Takahashi",
+    role: "Director of Architecture & Materials",
+    location: "Kyoto",
+    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80",
+    bio: "Specializing in historical wood joinery and lime plasters, Kaori oversees residential commissions across Asia and Southern Europe."
+  },
+  {
+    id: "team-3",
+    name: "Matteo Bellini",
+    role: "Head of Interior Detailing",
+    location: "Milan",
+    image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=600&q=80",
+    bio: "With a background in bespoke Italian cabinetry and metalwork, Matteo translates conceptual volume into precise tactile reality."
+  },
+  {
+    id: "team-4",
+    name: "Camilla Thorne",
+    role: "Senior Project Architect",
+    location: "London",
+    image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=600&q=80",
+    bio: "Directing complex restorations in historic city centers, Camilla merges conservation preservation with contemporary engineering."
+  }
+];
 
 export const fallbackSettings: StudioSettings = {
+  // Hero section
   heroTitle: "Spaces shaped around the way you live.",
   heroSubtitle: "A refined interior architecture practice creating quiet residential and commercial environments characterized by generous proportion, tactile materiality, and natural daylight.",
   heroTagline: "Interior Architecture & Spatial Design",
   heroImage: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=2000&q=85",
+  heroStatsLocations: "Milan · London · Kyoto",
+  heroStatsDiscipline: "Residential & Commercial",
+  heroStatsMateriality: "Stone, Timber, Lime Plaster",
+  heroStatsEthos: "Restraint & Longevity",
+
+  // Manifesto
   manifestoEyebrow: "Studio Manifesto",
   manifestoTitle: "Quiet architecture for thoughtful living.",
   manifestoLead: "We believe true luxury is not defined by excess, but by the thoughtful calibration of light, silence, and natural materiality.",
   manifestoBody: "Founded with studios in Milan, London, and Kyoto, ATELIER creates spaces that endure far beyond passing trends. Every commission is an unhurried investigation into spatial proportion, acoustic comfort, and tactile finishes that grow more beautiful with time.",
+
+  // Studio Page Core Principles
+  principle1Title: "Tactile Authenticity",
+  principle1Text: "We specify unpolished stone, untreated timber, and hand-troweled plasters that breathe and respond to daily touch, gathering poetic character as decades pass.",
+  principle2Title: "Spatial Choreography",
+  principle2Text: "A room is never an isolated container. We curate the sequence of thresholds, daylight transitions, and atmospheric sound dampening across the entire home.",
+  studioWorkspaceImage: "https://images.unsplash.com/photo-1600585154363-67eb9e2e2099?auto=format&fit=crop&w=1800&q=85",
+
+  // 4 Methodology Steps
+  step1Title: "Listening & Site Resonance",
+  step1Text: "Every project begins with an unhurried conversation. We examine the orientation of natural light, the texture of the surrounding landscape, and how you genuinely inhabit space.",
+  step2Title: "Spatial Flow & Volume",
+  step2Text: "We sculpt physical sightlines and transitional thresholds before considering surfaces. The goal is unforced proportion and rhythmic spatial continuity.",
+  step3Title: "Honest Textures & Craft",
+  step3Text: "We curate lime plasters, local stone, solid timber, and unvarnished metals — materials that patinate gracefully with age and respond to touch.",
+  step4Title: "Artisanal Execution",
+  step4Text: "Partnering with specialized masons, cabinetmakers, and lighting designers, we oversee construction to ensure meticulous architectural fidelity.",
+
+  // Closing CTA
+  ctaEyebrow: "Start a Conversation",
+  ctaTitle: "Have a project in mind?",
+  ctaItalicSubtitle: "Let’s shape something enduring together.",
+  ctaDescription: "We accept a limited number of residential and commercial commissions each year to dedicate singular attention to every detail.",
+
+  // Contact coordinates & Locations
   primaryEmail: "inquire@atelier-studio.com",
   pressEmail: "press@atelier-studio.com",
   phoneMilan: "+39 02 8901 2345",
@@ -176,7 +243,7 @@ export const fallbackProjects: Project[] = [
     heroImage: "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1800&q=85",
     galleryImages: [
       "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1600585152220-90363fe7e115?auto=format&fit=crop&w=1200&q=80"
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80"
     ],
     overview: "Designed for a collector of Scandinavian ceramics and modern art, Northline Residence leverages soft northern natural light. High ceilings and custom built-in niches create a gallery-like atmosphere for daily living.",
     approach: "By orchestrating subtle gradations of warm grey and oatmeal tones, the spaces feel luminous even through dark winter months. Floor-to-ceiling pivot doors maintain architectural order.",

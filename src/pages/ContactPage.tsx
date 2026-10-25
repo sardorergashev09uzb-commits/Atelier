@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { StudioSettings } from '../types';
 import { api } from '../services/api';
+import { fallbackSettings } from '../data/initialData';
 import { ProjectEstimator } from '../components/common/ProjectEstimator';
 import { ArrowRight, CheckCircle2, Clock, Mail, MapPin, Phone, Calculator } from 'lucide-react';
 
@@ -19,6 +21,7 @@ export const ContactPage: React.FC = () => {
     message: '',
   });
 
+  const [settings, setSettings] = useState<StudioSettings>(fallbackSettings);
   const [showEstimator, setShowEstimator] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [successResponse, setSuccessResponse] = useState<string | null>(null);
@@ -26,6 +29,10 @@ export const ContactPage: React.FC = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    api.getSettings().then((data) => {
+      if (data) setSettings(data);
+    });
+
     if (stateData) {
       setFormData((prev) => ({
         ...prev,
@@ -277,7 +284,7 @@ export const ContactPage: React.FC = () => {
             )}
           </div>
 
-          {/* Contact Details & Studios */}
+          {/* Contact Details & Studios (Dynamic from Settings) */}
           <div className="lg:col-span-5 space-y-12">
             <div>
               <span className="text-[10px] tracking-editorial uppercase text-atelier-olive block mb-2 font-medium">
@@ -292,7 +299,7 @@ export const ContactPage: React.FC = () => {
                   <MapPin className="w-4 h-4 text-atelier-olive mt-1 shrink-0" />
                   <div>
                     <strong className="block font-medium">Milan (Headquarters)</strong>
-                    <span className="text-atelier-muted">Via Solferino 14, 20121 Milano, Italy</span>
+                    <span className="text-atelier-muted">{settings.locationMilan || fallbackSettings.locationMilan}</span>
                   </div>
                 </div>
 
@@ -300,7 +307,7 @@ export const ContactPage: React.FC = () => {
                   <MapPin className="w-4 h-4 text-atelier-olive mt-1 shrink-0" />
                   <div>
                     <strong className="block font-medium">London Office</strong>
-                    <span className="text-atelier-muted">42 Marylebone High St, London W1U 5HF, UK</span>
+                    <span className="text-atelier-muted">{settings.locationLondon || fallbackSettings.locationLondon}</span>
                   </div>
                 </div>
 
@@ -308,7 +315,7 @@ export const ContactPage: React.FC = () => {
                   <MapPin className="w-4 h-4 text-atelier-olive mt-1 shrink-0" />
                   <div>
                     <strong className="block font-medium">Kyoto Atelier</strong>
-                    <span className="text-atelier-muted">Kamigyo Ward, Kyoto 602-0898, Japan</span>
+                    <span className="text-atelier-muted">{settings.locationKyoto || fallbackSettings.locationKyoto}</span>
                   </div>
                 </div>
               </div>
@@ -317,19 +324,19 @@ export const ContactPage: React.FC = () => {
             <div className="border-t border-atelier-charcoal/10 pt-8 space-y-4 text-sm">
               <div className="flex items-center space-x-3.5">
                 <Mail className="w-4 h-4 text-atelier-olive shrink-0" />
-                <a href="mailto:inquire@atelier-studio.com" className="hover:underline">
-                  inquire@atelier-studio.com
+                <a href={`mailto:${settings.primaryEmail || fallbackSettings.primaryEmail}`} className="hover:underline">
+                  {settings.primaryEmail || fallbackSettings.primaryEmail}
                 </a>
               </div>
 
               <div className="flex items-center space-x-3.5">
                 <Phone className="w-4 h-4 text-atelier-olive shrink-0" />
-                <span>+39 02 8901 2345 / +44 20 7946 0888</span>
+                <span>{(settings.phoneMilan || fallbackSettings.phoneMilan)} / {(settings.phoneLondon || fallbackSettings.phoneLondon)}</span>
               </div>
 
               <div className="flex items-center space-x-3.5 text-atelier-muted">
                 <Clock className="w-4 h-4 text-atelier-olive shrink-0" />
-                <span>Studio hours: Mon – Fri, 09:00 – 18:30 CET</span>
+                <span>Studio hours: {settings.studioHours || fallbackSettings.studioHours}</span>
               </div>
             </div>
 
@@ -339,8 +346,8 @@ export const ContactPage: React.FC = () => {
               </span>
               <p className="text-[13px] text-atelier-muted leading-relaxed">
                 For monographs, publication imagery requests, and university lectures, contact{' '}
-                <a href="mailto:press@atelier-studio.com" className="text-atelier-charcoal underline">
-                  press@atelier-studio.com
+                <a href={`mailto:${settings.pressEmail || fallbackSettings.pressEmail}`} className="text-atelier-charcoal underline">
+                  {settings.pressEmail || fallbackSettings.pressEmail}
                 </a>.
               </p>
             </div>

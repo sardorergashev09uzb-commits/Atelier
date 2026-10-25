@@ -1,5 +1,6 @@
-import { Project, Inquiry, StudioSettings, StudioService } from '../types';
-import { fallbackProjects, fallbackSettings, fallbackServices } from '../data/initialData';
+import { Project, Inquiry, StudioSettings, StudioService, TeamMember, ArchitectureMaterial } from '../types';
+import { fallbackProjects, fallbackSettings, fallbackServices, fallbackTeamMembers } from '../data/initialData';
+import { studioMaterials } from '../data/materialsData';
 
 const API_BASE = '/api';
 
@@ -7,6 +8,8 @@ const LOCAL_STORAGE_KEY_PROJECTS = 'atelier_local_projects';
 const LOCAL_STORAGE_KEY_INQUIRIES = 'atelier_local_inquiries';
 const LOCAL_STORAGE_KEY_SETTINGS = 'atelier_local_settings';
 const LOCAL_STORAGE_KEY_SERVICES = 'atelier_local_services';
+const LOCAL_STORAGE_KEY_TEAM = 'atelier_local_team';
+const LOCAL_STORAGE_KEY_MATERIALS = 'atelier_local_materials';
 const LOCAL_STORAGE_KEY_ADMIN = 'atelier_local_admin';
 
 const defaultAdminUser = {
@@ -38,9 +41,7 @@ function getLocalProjects(): Project[] {
   if (data) {
     try {
       return JSON.parse(data);
-    } catch {
-      // fallback
-    }
+    } catch {}
   }
   localStorage.setItem(LOCAL_STORAGE_KEY_PROJECTS, JSON.stringify(fallbackProjects));
   return fallbackProjects;
@@ -55,9 +56,7 @@ function getLocalInquiries(): Inquiry[] {
   if (data) {
     try {
       return JSON.parse(data);
-    } catch {
-      // fallback
-    }
+    } catch {}
   }
   return [];
 }
@@ -71,9 +70,7 @@ function getLocalSettings(): StudioSettings {
   if (data) {
     try {
       return JSON.parse(data);
-    } catch {
-      // fallback
-    }
+    } catch {}
   }
   localStorage.setItem(LOCAL_STORAGE_KEY_SETTINGS, JSON.stringify(fallbackSettings));
   return fallbackSettings;
@@ -88,9 +85,7 @@ function getLocalServices(): StudioService[] {
   if (data) {
     try {
       return JSON.parse(data);
-    } catch {
-      // fallback
-    }
+    } catch {}
   }
   localStorage.setItem(LOCAL_STORAGE_KEY_SERVICES, JSON.stringify(fallbackServices));
   return fallbackServices;
@@ -98,6 +93,36 @@ function getLocalServices(): StudioService[] {
 
 function setLocalServices(services: StudioService[]) {
   localStorage.setItem(LOCAL_STORAGE_KEY_SERVICES, JSON.stringify(services));
+}
+
+function getLocalTeam(): TeamMember[] {
+  const data = localStorage.getItem(LOCAL_STORAGE_KEY_TEAM);
+  if (data) {
+    try {
+      return JSON.parse(data);
+    } catch {}
+  }
+  localStorage.setItem(LOCAL_STORAGE_KEY_TEAM, JSON.stringify(fallbackTeamMembers));
+  return fallbackTeamMembers;
+}
+
+function setLocalTeam(team: TeamMember[]) {
+  localStorage.setItem(LOCAL_STORAGE_KEY_TEAM, JSON.stringify(team));
+}
+
+function getLocalMaterials(): ArchitectureMaterial[] {
+  const data = localStorage.getItem(LOCAL_STORAGE_KEY_MATERIALS);
+  if (data) {
+    try {
+      return JSON.parse(data);
+    } catch {}
+  }
+  localStorage.setItem(LOCAL_STORAGE_KEY_MATERIALS, JSON.stringify(studioMaterials));
+  return studioMaterials;
+}
+
+function setLocalMaterials(materials: ArchitectureMaterial[]) {
+  localStorage.setItem(LOCAL_STORAGE_KEY_MATERIALS, JSON.stringify(materials));
 }
 
 export const api = {
@@ -129,6 +154,95 @@ export const api = {
     }
   },
 
+  // TEAM MEMBERS
+  async getTeamMembers(): Promise<TeamMember[]> {
+    try {
+      const res = await fetch(`${API_BASE}/team`);
+      if (!res.ok) throw new Error('Network error');
+      return await res.json();
+    } catch (err) {
+      return getLocalTeam();
+    }
+  },
+
+  async createTeamMember(member: Partial<TeamMember>): Promise<TeamMember> {
+    const all = getLocalTeam();
+    const newMember: TeamMember = {
+      id: 'team-' + Date.now(),
+      name: member.name || 'Architect',
+      role: member.role || 'Design Partner',
+      location: member.location || 'London / Milan',
+      image: member.image || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80',
+      bio: member.bio || 'Architectural specialist dedicated to sensory proportion and natural materiality.',
+    };
+    all.push(newMember);
+    setLocalTeam(all);
+    return newMember;
+  },
+
+  async updateTeamMember(id: string, updates: Partial<TeamMember>): Promise<TeamMember> {
+    const all = getLocalTeam();
+    const index = all.findIndex((m) => m.id === id);
+    if (index !== -1) {
+      all[index] = { ...all[index], ...updates };
+      setLocalTeam(all);
+      return all[index];
+    }
+    throw new Error('Member not found');
+  },
+
+  async deleteTeamMember(id: string): Promise<boolean> {
+    const all = getLocalTeam().filter((m) => m.id !== id);
+    setLocalTeam(all);
+    return true;
+  },
+
+  // MATERIALS SPECIMEN LIBRARY
+  async getMaterials(): Promise<ArchitectureMaterial[]> {
+    try {
+      const res = await fetch(`${API_BASE}/materials`);
+      if (!res.ok) throw new Error('Network error');
+      return await res.json();
+    } catch (err) {
+      return getLocalMaterials();
+    }
+  },
+
+  async createMaterial(mat: Partial<ArchitectureMaterial>): Promise<ArchitectureMaterial> {
+    const all = getLocalMaterials();
+    const newMat: ArchitectureMaterial = {
+      id: 'mat-' + Date.now(),
+      name: mat.name || 'New Mineral Specimen',
+      origin: mat.origin || 'Regional Quarry',
+      category: mat.category || 'Stone',
+      image: mat.image || 'https://images.unsplash.com/photo-1590402494682-cd3fb53b1f70?auto=format&fit=crop&w=800&q=80',
+      tactility: mat.tactility || 'Honed matte texture',
+      patinaBehavior: mat.patinaBehavior || 'Gradually patinates with exposure',
+      architecturalRole: mat.architecturalRole || 'Focal surfaces and hearths',
+      description: mat.description || 'Natural material sourced directly from historical quarries.',
+    };
+    all.push(newMat);
+    setLocalMaterials(all);
+    return newMat;
+  },
+
+  async updateMaterial(id: string, updates: Partial<ArchitectureMaterial>): Promise<ArchitectureMaterial> {
+    const all = getLocalMaterials();
+    const index = all.findIndex((m) => m.id === id);
+    if (index !== -1) {
+      all[index] = { ...all[index], ...updates };
+      setLocalMaterials(all);
+      return all[index];
+    }
+    throw new Error('Material not found');
+  },
+
+  async deleteMaterial(id: string): Promise<boolean> {
+    const all = getLocalMaterials().filter((m) => m.id !== id);
+    setLocalMaterials(all);
+    return true;
+  },
+
   // SERVICES
   async getServices(): Promise<StudioService[]> {
     try {
@@ -141,62 +255,37 @@ export const api = {
   },
 
   async createService(service: Partial<StudioService>): Promise<StudioService> {
-    try {
-      const res = await fetch(`${API_BASE}/services`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(service),
-      });
-      if (!res.ok) throw new Error('Save error');
-      return await res.json();
-    } catch (err) {
-      const all = getLocalServices();
-      const newSvc: StudioService = {
-        id: 'svc-' + Date.now(),
-        number: String(all.length + 1).padStart(2, '0'),
-        title: service.title || 'New Discipline',
-        tagline: service.tagline || '',
-        tag: service.tag || 'Discipline',
-        image: service.image || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
-        description: service.description || '',
-        scope: service.scope || [],
-      };
-      all.push(newSvc);
-      setLocalServices(all);
-      return newSvc;
-    }
+    const all = getLocalServices();
+    const newSvc: StudioService = {
+      id: 'svc-' + Date.now(),
+      number: String(all.length + 1).padStart(2, '0'),
+      title: service.title || 'New Discipline',
+      tagline: service.tagline || '',
+      tag: service.tag || 'Discipline',
+      image: service.image || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
+      description: service.description || '',
+      scope: service.scope || [],
+    };
+    all.push(newSvc);
+    setLocalServices(all);
+    return newSvc;
   },
 
   async updateService(id: string, updates: Partial<StudioService>): Promise<StudioService> {
-    try {
-      const res = await fetch(`${API_BASE}/services/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-      if (!res.ok) throw new Error('Update error');
-      return await res.json();
-    } catch (err) {
-      const all = getLocalServices();
-      const index = all.findIndex((s) => s.id === id);
-      if (index !== -1) {
-        all[index] = { ...all[index], ...updates };
-        setLocalServices(all);
-        return all[index];
-      }
-      throw new Error('Service not found');
+    const all = getLocalServices();
+    const index = all.findIndex((s) => s.id === id);
+    if (index !== -1) {
+      all[index] = { ...all[index], ...updates };
+      setLocalServices(all);
+      return all[index];
     }
+    throw new Error('Service not found');
   },
 
   async deleteService(id: string): Promise<boolean> {
-    try {
-      const res = await fetch(`${API_BASE}/services/${id}`, { method: 'DELETE' });
-      return res.ok;
-    } catch (err) {
-      const all = getLocalServices().filter((s) => s.id !== id);
-      setLocalServices(all);
-      return true;
-    }
+    const all = getLocalServices().filter((s) => s.id !== id);
+    setLocalServices(all);
+    return true;
   },
 
   // PROJECTS
@@ -229,169 +318,103 @@ export const api = {
   },
 
   async createProject(project: Partial<Project>): Promise<Project> {
-    try {
-      const res = await fetch(`${API_BASE}/projects`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(project),
-      });
-      if (!res.ok) throw new Error('Save error');
-      return await res.json();
-    } catch (err) {
-      const all = getLocalProjects();
-      const newProj: Project = {
-        id: 'proj-' + Date.now(),
-        slug: (project.title || 'project').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-        title: project.title || 'Untitled',
-        subtitle: project.subtitle || '',
-        category: project.category || 'Residential',
-        location: project.location || '',
-        year: project.year || new Date().getFullYear().toString(),
-        area: project.area || '',
-        isFeatured: project.isFeatured ?? true,
-        heroImage: project.heroImage || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
-        galleryImages: project.galleryImages || [],
-        overview: project.overview || '',
-        approach: project.approach || '',
-        materials: project.materials || [],
-      };
-      all.unshift(newProj);
-      setLocalProjects(all);
-      return newProj;
-    }
+    const all = getLocalProjects();
+    const newProj: Project = {
+      id: 'proj-' + Date.now(),
+      slug: (project.title || 'project').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      title: project.title || 'Untitled',
+      subtitle: project.subtitle || '',
+      category: project.category || 'Residential',
+      location: project.location || '',
+      year: project.year || new Date().getFullYear().toString(),
+      area: project.area || '',
+      isFeatured: project.isFeatured ?? true,
+      heroImage: project.heroImage || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
+      galleryImages: project.galleryImages || [],
+      overview: project.overview || '',
+      approach: project.approach || '',
+      materials: project.materials || [],
+    };
+    all.unshift(newProj);
+    setLocalProjects(all);
+    return newProj;
   },
 
   async updateProject(id: string, updates: Partial<Project>): Promise<Project> {
-    try {
-      const res = await fetch(`${API_BASE}/projects/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-      if (!res.ok) throw new Error('Update error');
-      return await res.json();
-    } catch (err) {
-      const all = getLocalProjects();
-      const index = all.findIndex((p) => p.id === id);
-      if (index !== -1) {
-        all[index] = { ...all[index], ...updates };
-        setLocalProjects(all);
-        return all[index];
-      }
-      throw new Error('Project not found');
+    const all = getLocalProjects();
+    const index = all.findIndex((p) => p.id === id);
+    if (index !== -1) {
+      all[index] = { ...all[index], ...updates };
+      setLocalProjects(all);
+      return all[index];
     }
+    throw new Error('Project not found');
   },
 
   async deleteProject(id: string): Promise<boolean> {
-    try {
-      const res = await fetch(`${API_BASE}/projects/${id}`, {
-        method: 'DELETE',
-      });
-      return res.ok;
-    } catch (err) {
-      const all = getLocalProjects().filter((p) => p.id !== id);
-      setLocalProjects(all);
-      return true;
-    }
+    const all = getLocalProjects().filter((p) => p.id !== id);
+    setLocalProjects(all);
+    return true;
   },
 
   // INQUIRIES
   async submitInquiry(data: Partial<Inquiry>): Promise<{ success: boolean; message: string }> {
-    try {
-      const res = await fetch(`${API_BASE}/inquiries`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) throw new Error('Error sending inquiry');
-      return await res.json();
-    } catch (err) {
-      const inquiries = getLocalInquiries();
-      const newInq: Inquiry = {
-        id: 'inq-' + Date.now(),
-        clientName: data.clientName || 'Anonymous',
-        email: data.email || '',
-        phone: data.phone || '',
-        projectType: data.projectType || 'General Consultation',
-        location: data.location || '',
-        budgetRange: data.budgetRange || 'Flexible',
-        estimatedArea: data.estimatedArea || '',
-        message: data.message || '',
-        status: 'New',
-        createdAt: new Date().toISOString(),
-      };
-      inquiries.unshift(newInq);
-      setLocalInquiries(inquiries);
-      return {
-        success: true,
-        message: 'Your inquiry has been received with thanks. Our studio partners will review and reply within 48 hours.',
-      };
-    }
+    const inquiries = getLocalInquiries();
+    const newInq: Inquiry = {
+      id: 'inq-' + Date.now(),
+      clientName: data.clientName || 'Anonymous',
+      email: data.email || '',
+      phone: data.phone || '',
+      projectType: data.projectType || 'General Consultation',
+      location: data.location || '',
+      budgetRange: data.budgetRange || 'Flexible',
+      estimatedArea: data.estimatedArea || '',
+      message: data.message || '',
+      status: 'New',
+      createdAt: new Date().toISOString(),
+    };
+    inquiries.unshift(newInq);
+    setLocalInquiries(inquiries);
+    return {
+      success: true,
+      message: 'Your inquiry has been received with thanks. Our studio partners will review and reply within 48 hours.',
+    };
   },
 
   async getInquiries(): Promise<Inquiry[]> {
-    try {
-      const res = await fetch(`${API_BASE}/inquiries`);
-      if (!res.ok) throw new Error('Error fetching inquiries');
-      return await res.json();
-    } catch (err) {
-      return getLocalInquiries();
-    }
+    return getLocalInquiries();
   },
 
   async updateInquiryStatus(id: string, status: Inquiry['status']): Promise<boolean> {
-    try {
-      const res = await fetch(`${API_BASE}/inquiries/${id}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      });
-      return res.ok;
-    } catch (err) {
-      const inquiries = getLocalInquiries();
-      const target = inquiries.find((i) => i.id === id);
-      if (target) {
-        target.status = status;
-        setLocalInquiries(inquiries);
-      }
-      return true;
+    const inquiries = getLocalInquiries();
+    const target = inquiries.find((i) => i.id === id);
+    if (target) {
+      target.status = status;
+      setLocalInquiries(inquiries);
     }
+    return true;
   },
 
   async deleteInquiry(id: string): Promise<boolean> {
-    try {
-      const res = await fetch(`${API_BASE}/inquiries/${id}`, { method: 'DELETE' });
-      return res.ok;
-    } catch (err) {
-      const inquiries = getLocalInquiries().filter((i) => i.id !== id);
-      setLocalInquiries(inquiries);
-      return true;
-    }
+    const inquiries = getLocalInquiries().filter((i) => i.id !== id);
+    setLocalInquiries(inquiries);
+    return true;
   },
 
   // AUTH & SECURITY
   async login(username: string, password: string): Promise<{ success: boolean; token?: string; user?: any; message?: string }> {
-    try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
-      return await res.json();
-    } catch (err) {
-      const localAdmin = getLocalAdmin();
-      if (
-        (username === localAdmin.username && password === localAdmin.password) ||
-        (username === 'admin' && password === 'atelier2026')
-      ) {
-        return {
-          success: true,
-          token: 'atelier_demo_token',
-          user: { name: localAdmin.name, role: localAdmin.role, email: localAdmin.email, username: localAdmin.username }
-        };
-      }
-      return { success: false, message: 'Invalid credentials' };
+    const localAdmin = getLocalAdmin();
+    if (
+      (username === localAdmin.username && password === localAdmin.password) ||
+      (username === 'admin' && password === 'atelier2026')
+    ) {
+      return {
+        success: true,
+        token: 'atelier_demo_token',
+        user: { name: localAdmin.name, role: localAdmin.role, email: localAdmin.email, username: localAdmin.username }
+      };
     }
+    return { success: false, message: 'Invalid credentials' };
   },
 
   async updateCredentials(data: {
@@ -401,53 +424,27 @@ export const api = {
     email?: string;
     name?: string;
   }): Promise<{ success: boolean; message?: string; error?: string }> {
-    try {
-      const res = await fetch(`${API_BASE}/auth/credentials`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || 'Failed to update credentials');
-      return result;
-    } catch (err: any) {
-      const localAdmin = getLocalAdmin();
-      if (data.currentPassword !== localAdmin.password && data.currentPassword !== 'atelier2026') {
-        return { success: false, error: 'Current password does not match.' };
-      }
-      if (data.newUsername) localAdmin.username = data.newUsername.trim();
-      if (data.newPassword) localAdmin.password = data.newPassword.trim();
-      if (data.email) localAdmin.email = data.email.trim();
-      if (data.name) localAdmin.name = data.name.trim();
-      setLocalAdmin(localAdmin);
-      return { success: true, message: 'Admin security credentials updated successfully.' };
+    const localAdmin = getLocalAdmin();
+    if (data.currentPassword !== localAdmin.password && data.currentPassword !== 'atelier2026') {
+      return { success: false, error: 'Current password does not match.' };
     }
+    if (data.newUsername) localAdmin.username = data.newUsername.trim();
+    if (data.newPassword) localAdmin.password = data.newPassword.trim();
+    if (data.email) localAdmin.email = data.email.trim();
+    if (data.name) localAdmin.name = data.name.trim();
+    setLocalAdmin(localAdmin);
+    return { success: true, message: 'Admin security credentials updated successfully.' };
   },
 
   // Export full JSON database backup
   async exportBackup(): Promise<void> {
-    try {
-      const res = await fetch(`${API_BASE}/admin/backup`);
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `atelier-db-backup-${new Date().toISOString().slice(0, 10)}.json`;
-        a.click();
-        window.URL.revokeObjectURL(url);
-        return;
-      }
-    } catch {
-      // fallback
-    }
-
-    // fallback export
     const backupObj = {
       projects: getLocalProjects(),
       inquiries: getLocalInquiries(),
       settings: getLocalSettings(),
       services: getLocalServices(),
+      team: getLocalTeam(),
+      materials: getLocalMaterials(),
       exportTimestamp: new Date().toISOString(),
     };
     const blob = new Blob([JSON.stringify(backupObj, null, 2)], { type: 'application/json' });

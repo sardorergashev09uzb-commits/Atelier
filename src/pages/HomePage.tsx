@@ -31,26 +31,26 @@ export const HomePage: React.FC = () => {
     {
       step: '01',
       phase: 'Dialogue',
-      title: 'Listening & Site Resonance',
-      text: 'Every project begins with an unhurried conversation. We examine the orientation of natural light, the texture of the surrounding landscape, and how you genuinely inhabit space.',
+      title: settings.step1Title || fallbackSettings.step1Title,
+      text: settings.step1Text || fallbackSettings.step1Text,
     },
     {
       step: '02',
       phase: 'Concept',
-      title: 'Spatial Flow & Volume',
-      text: 'We sculpt physical sightlines and transitional thresholds before considering surfaces. The goal is unforced proportion and rhythmic spatial continuity.',
+      title: settings.step2Title || fallbackSettings.step2Title,
+      text: settings.step2Text || fallbackSettings.step2Text,
     },
     {
       step: '03',
       phase: 'Materiality',
-      title: 'Honest Textures & Craft',
-      text: 'We curate lime plasters, local stone, solid timber, and unvarnished metals — materials that patinate gracefully with age and respond to touch.',
+      title: settings.step3Title || fallbackSettings.step3Title,
+      text: settings.step3Text || fallbackSettings.step3Text,
     },
     {
       step: '04',
       phase: 'Realization',
-      title: 'Artisanal Execution',
-      text: 'Partnering with specialized masons, cabinetmakers, and lighting designers, we oversee construction to ensure meticulous architectural fidelity.',
+      title: settings.step4Title || fallbackSettings.step4Title,
+      text: settings.step4Text || fallbackSettings.step4Text,
     },
   ];
 
@@ -58,7 +58,6 @@ export const HomePage: React.FC = () => {
     <div className="min-h-screen bg-atelier-ivory">
       {/* 1. HERO SECTION (Dynamic from Admin Settings) */}
       <section className="relative min-h-[92vh] flex flex-col justify-end pt-32 pb-16 px-6 md:px-12 border-b border-atelier-charcoal/10">
-        {/* Background Image / Subtle Framing */}
         <div className="absolute inset-0 z-0 overflow-hidden">
           <img
             src={settings.heroImage || fallbackSettings.heroImage}
@@ -68,7 +67,6 @@ export const HomePage: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-t from-atelier-ivory via-atelier-ivory/60 to-atelier-charcoal/20" />
         </div>
 
-        {/* Hero Content */}
         <div className="relative z-10 max-w-7xl mx-auto w-full">
           <div className="max-w-3xl">
             <span className="inline-block text-[11px] tracking-[0.26em] uppercase text-atelier-olive font-medium mb-4 bg-atelier-ivory/80 backdrop-blur-sm px-3 py-1 border border-atelier-olive/20">
@@ -99,29 +97,29 @@ export const HomePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Stats/Metadata bar */}
+          {/* Dynamic Stats/Metadata bar */}
           <div className="mt-16 pt-8 border-t border-atelier-charcoal/15 grid grid-cols-2 md:grid-cols-4 gap-6 text-[12px]">
             <div>
               <span className="text-atelier-muted block uppercase tracking-editorial text-[10px]">Locations</span>
-              <span className="font-medium text-atelier-charcoal">Milan · London · Kyoto</span>
+              <span className="font-medium text-atelier-charcoal">{settings.heroStatsLocations || fallbackSettings.heroStatsLocations}</span>
             </div>
             <div>
               <span className="text-atelier-muted block uppercase tracking-editorial text-[10px]">Discipline</span>
-              <span className="font-medium text-atelier-charcoal">Residential & Commercial</span>
+              <span className="font-medium text-atelier-charcoal">{settings.heroStatsDiscipline || fallbackSettings.heroStatsDiscipline}</span>
             </div>
             <div>
               <span className="text-atelier-muted block uppercase tracking-editorial text-[10px]">Materiality</span>
-              <span className="font-medium text-atelier-charcoal">Stone, Timber, Lime Plaster</span>
+              <span className="font-medium text-atelier-charcoal">{settings.heroStatsMateriality || fallbackSettings.heroStatsMateriality}</span>
             </div>
             <div>
               <span className="text-atelier-muted block uppercase tracking-editorial text-[10px]">Ethos</span>
-              <span className="font-medium text-atelier-charcoal">Restraint & Longevity</span>
+              <span className="font-medium text-atelier-charcoal">{settings.heroStatsEthos || fallbackSettings.heroStatsEthos}</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 2. STUDIO MANIFESTO (Dynamic from Admin Settings) */}
+      {/* 2. STUDIO MANIFESTO (Dynamic) */}
       <section className="py-24 md:py-36 px-6 md:px-12 bg-atelier-ivory">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-baseline">
@@ -154,7 +152,7 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* 3. SELECTED PROJECTS (EDITORIAL ASYMMETRICAL GRID) */}
+      {/* 3. SELECTED PROJECTS */}
       <section className="py-20 md:py-32 px-6 md:px-12 bg-atelier-cream border-y border-atelier-charcoal/10">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 pb-6 border-b border-atelier-charcoal/10">
@@ -175,14 +173,12 @@ export const HomePage: React.FC = () => {
             </Link>
           </div>
 
-          {/* Asymmetrical Grid: First big, next two side-by-side */}
           {loading ? (
             <div className="py-20 text-center text-atelier-muted font-serif italic text-lg">
               Curating project portfolio...
             </div>
           ) : (
             <div className="space-y-16">
-              {/* Main feature project */}
               {featuredProjects[0] && (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                   <div className="lg:col-span-8">
@@ -223,7 +219,6 @@ export const HomePage: React.FC = () => {
                 </div>
               )}
 
-              {/* Two column asymmetrical secondary projects */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-14 pt-8">
                 {featuredProjects.slice(1, 3).map((project, idx) => (
                   <div key={project.id} className={idx === 1 ? 'md:pt-12' : ''}>
@@ -242,7 +237,7 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* 4. SERVICES OVERVIEW (Dynamic from Services database) */}
+      {/* 4. SERVICES OVERVIEW */}
       <section className="py-24 md:py-36 px-6 md:px-12 bg-atelier-ivory">
         <div className="max-w-7xl mx-auto">
           <div className="max-w-2xl mb-16">
@@ -303,7 +298,7 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* 5. DESIGN PROCESS (4 STEPS) */}
+      {/* 5. DESIGN PROCESS (Dynamic from Settings) */}
       <section className="py-24 md:py-32 px-6 md:px-12 bg-atelier-cream border-t border-atelier-charcoal/10">
         <div className="max-w-7xl mx-auto">
           <div className="max-w-xl mb-16">
@@ -348,18 +343,18 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* 6. CLOSING CONSULTATION CTA */}
+      {/* 6. CLOSING CONSULTATION CTA (Dynamic from Settings) */}
       <section className="py-28 md:py-36 px-6 md:px-12 bg-atelier-charcoal text-atelier-ivory">
         <div className="max-w-5xl mx-auto text-center">
           <span className="text-[10px] tracking-[0.28em] uppercase text-atelier-sand block mb-4">
-            Start a Conversation
+            {settings.ctaEyebrow || fallbackSettings.ctaEyebrow}
           </span>
           <h2 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-normal leading-tight mb-8">
-            Have a project in mind?<br />
-            <span className="italic font-normal">Let’s shape something enduring together.</span>
+            {settings.ctaTitle || fallbackSettings.ctaTitle}<br />
+            <span className="italic font-normal">{settings.ctaItalicSubtitle || fallbackSettings.ctaItalicSubtitle}</span>
           </h2>
           <p className="text-atelier-sand/80 max-w-xl mx-auto text-sm sm:text-base mb-10 leading-relaxed font-light">
-            We accept a limited number of residential and commercial commissions each year to dedicate singular attention to every detail.
+            {settings.ctaDescription || fallbackSettings.ctaDescription}
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
